@@ -29,20 +29,56 @@ class HorizontalHatch(HatchPatternBase):
 
 
 class VerticalHatch(HatchPatternBase):
-    def __init__(self, hatch, density):
+    def __init__(self, hatch, density, thickness=0.0, angle=0.0):
         self.num_lines = int((hatch.count('|') + hatch.count('+')) * density)
-        self.num_vertices = self.num_lines * 2
+        self.num_vertices = self.num_lines * 5
+        self.thickness = thickness / 100.0
+        self.angle = angle
+        self.negative_angle = 0
+        if self.angle < 0:
+            self.angle = 90 - np.abs(self.angle)
+            self.negative_angle = 1
 
     def set_vertices_and_codes(self, vertices, codes):
         steps, stepsize = np.linspace(0.0, 1.0, self.num_lines, False,
                                       retstep=True)
         steps += stepsize / 2.
-        vertices[0::2, 0] = steps
-        vertices[0::2, 1] = 0.0
-        vertices[1::2, 0] = steps
-        vertices[1::2, 1] = 1.0
-        codes[0::2] = Path.MOVETO
-        codes[1::2] = Path.LINETO
+
+        m = np.tan(np.deg2rad(self.angle)) if self.angle != 90 else 10 ** 12
+        m_sq = np.square(m)
+        denominator = 1 / (1 + m_sq)
+
+        points = {i: (0, 0) for i in range(1, 5)}
+        points[1] = (m_sq * denominator, -m * denominator)
+        points[2] = ((1 + m + m_sq) * denominator, m_sq * denominator)
+        points[3] = (denominator, (1 + m + m_sq) * denominator)
+        points[4] = (-m * denominator, denominator)
+
+        p1, p2, p3, p4 = [points[i] for i in (1, 2, 3, 4, 1)[self.negative_angle:][:4]]
+
+        x_offset = self.thickness * np.cos(np.deg2rad(self.angle)) / 2.0
+        y_offset = self.thickness * np.sin(np.deg2rad(self.angle)) / 2.0
+
+        if self.negative_angle:
+            y_offset = -y_offset
+
+        vertices[0::5, 0] = p1[0] + steps * (p2[0] - p1[0]) - x_offset
+        vertices[0::5, 1] = p1[1] + steps * (p2[1] - p1[1]) - y_offset
+        codes[0::5] = Path.MOVETO
+
+        vertices[1::5, 0] = p4[0] + steps * (p3[0] - p4[0]) - x_offset
+        vertices[1::5, 1] = p4[1] + steps * (p3[1] - p4[1]) - y_offset
+        codes[1::5] = Path.LINETO
+
+        vertices[2::5, 0] = vertices[1::5, 0] + x_offset * 2
+        vertices[2::5, 1] = vertices[1::5, 1] + y_offset * 2
+        codes[2::5] = Path.LINETO
+
+        vertices[3::5, 0] = vertices[0::5, 0] + x_offset * 2
+        vertices[3::5, 1] = vertices[0::5, 1] + y_offset * 2
+        codes[3::5] = Path.LINETO
+
+        codes[4::5] = Path.CLOSEPOLY
 
 
 class NorthEastHatch(HatchPatternBase):

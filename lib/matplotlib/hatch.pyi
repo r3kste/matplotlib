@@ -14,7 +14,8 @@ class HorizontalHatch(HatchPatternBase):
 class VerticalHatch(HatchPatternBase):
     num_lines: int
     num_vertices: int
-    def __init__(self, hatch: str, density: int) -> None: ...
+
+    def __init__(self, hatch: str, density: int, thickness: float, angle: float) -> None: ...
     def set_vertices_and_codes(self, vertices: ArrayLike, codes: ArrayLike) -> None: ...
 
 class NorthEastHatch(HatchPatternBase):
