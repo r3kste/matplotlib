@@ -334,7 +334,7 @@ class RendererBase:
         return (N + Npath_ids - 1) // Npath_ids
 
     def _iter_collection(self, gc, path_ids, offsets, offset_trans, facecolors,
-                         edgecolors, linewidths, linestyles,
+                         edgecolors, hatchcolors, linewidths, linestyles,
                          antialiaseds, urls, offset_position):
         """
         Helper method (along with `_iter_collection_raw_paths`) to implement
