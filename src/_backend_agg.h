@@ -976,7 +976,7 @@ inline void RendererAgg::_draw_path_collection_generic(GCAgg &gc,
 
         if (Nfacecolors) {
             int ic = i % Nfacecolors;
-            face.second = agg::rgba(0, 0, 0, 0);
+            face.second = agg::rgba(facecolors(ic, 0), facecolors(ic, 1), facecolors(ic, 2), facecolors(ic, 3));
         }
 
         if (Nedgecolors) {
