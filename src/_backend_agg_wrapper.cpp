@@ -306,7 +306,7 @@ PyRendererAgg_draw_path_collection(PyRendererAgg *self, PyObject *args)
     PyObject *offset_position; // offset position is no longer used
 
     if (!PyArg_ParseTuple(args,
-                          "O&O&O&O&O&O&O&O&O&O&O&OO:draw_path_collection",
+                          "O&O&O&O&O&O&O&O&O&O&O&O&OO:draw_path_collection",
                           &convert_gcagg,
                           &gc,
                           &convert_trans_affine,
@@ -323,6 +323,7 @@ PyRendererAgg_draw_path_collection(PyRendererAgg *self, PyObject *args)
                           &facecolors,
                           &convert_colors,
                           &edgecolors,
+                          &convert_colors,
                           &hatchcolors,
                           &linewidths.converter,
                           &linewidths,
