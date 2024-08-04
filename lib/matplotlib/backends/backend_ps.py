@@ -513,7 +513,7 @@ grestore
 
     @_log_if_debug_on
     def draw_path_collection(self, gc, master_transform, paths, all_transforms,
-                             offsets, offset_trans, facecolors, edgecolors,
+                             offsets, offset_trans, facecolors, edgecolors, hatchcolors,
                              linewidths, linestyles, antialiaseds, urls,
                              offset_position):
         # Is the optimization worth it? Rough calculation:
@@ -529,7 +529,7 @@ grestore
         if not should_do_optimization:
             return RendererBase.draw_path_collection(
                 self, gc, master_transform, paths, all_transforms,
-                offsets, offset_trans, facecolors, edgecolors,
+                offsets, offset_trans, facecolors, edgecolors, hatchcolors,
                 linewidths, linestyles, antialiaseds, urls,
                 offset_position)
 

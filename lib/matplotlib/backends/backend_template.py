@@ -64,8 +64,8 @@ class RendererTemplate(RendererBase):
     # performance will probably want to implement it
 #     def draw_path_collection(self, gc, master_transform, paths,
 #                              all_transforms, offsets, offset_trans,
-#                              facecolors, edgecolors, linewidths, linestyles,
-#                              antialiaseds):
+#                              facecolors, edgecolors, hatchcolors,
+#                              linewidths, linestyles, antialiaseds):
 #         pass
 
     # draw_quad_mesh is optional, and we get more correct

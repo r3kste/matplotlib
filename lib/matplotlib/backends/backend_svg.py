@@ -713,7 +713,7 @@ class RendererSVG(RendererBase):
         writer.end('g')
 
     def draw_path_collection(self, gc, master_transform, paths, all_transforms,
-                             offsets, offset_trans, facecolors, edgecolors,
+                             offsets, offset_trans, facecolors, edgecolors, hatchcolors,
                              linewidths, linestyles, antialiaseds, urls,
                              offset_position):
         # Is the optimization worth it? Rough calculation:
@@ -729,7 +729,7 @@ class RendererSVG(RendererBase):
         if not should_do_optimization:
             return super().draw_path_collection(
                 gc, master_transform, paths, all_transforms,
-                offsets, offset_trans, facecolors, edgecolors,
+                offsets, offset_trans, facecolors, edgecolors, hatchcolors,
                 linewidths, linestyles, antialiaseds, urls,
                 offset_position)
 
