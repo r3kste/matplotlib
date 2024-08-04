@@ -735,6 +735,7 @@ class GraphicsContextBase:
         self._linewidth = 1
         self._rgb = (0.0, 0.0, 0.0, 1.0)
         self._hatch = None
+        self._hatch_color = (0.0, 0.0, 0.0, 1.0)
         self._hatch_linewidth = rcParams['hatch.linewidth']
         self._url = None
         self._gid = None
@@ -755,6 +756,7 @@ class GraphicsContextBase:
         self._linewidth = gc._linewidth
         self._rgb = gc._rgb
         self._hatch = gc._hatch
+        self._hatch_color = gc._hatch_color
         self._hatch_linewidth = gc._hatch_linewidth
         self._url = gc._url
         self._gid = gc._gid
@@ -991,6 +993,14 @@ class GraphicsContextBase:
         if hatch is None:
             return None
         return Path.hatch(hatch, density)
+
+    def get_hatch_color(self):
+        """Get the hatch color."""
+        return self._hatch_color
+
+    def set_hatch_color(self, hatch_color):
+        """Set the hatch color."""
+        self._hatch_color = hatch_color
 
     def get_hatch_linewidth(self):
         """Get the hatch linewidth."""
