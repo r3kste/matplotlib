@@ -422,7 +422,7 @@ class Patch(artist.Artist):
         self.set_facecolor(c)
 
     def _set_hatchcolor(self, color):
-        self._hatch_color = colors.to_rgba(color)
+        self._hatch_color = colors.to_rgba(color, self._alpha)
         self.stale = True
 
     def set_hatchcolor(self, color):
