@@ -35,7 +35,7 @@ def test_uses_per_path():
                rb._iter_collection(
                    gc, range(len(raw_paths)), offsets,
                    transforms.AffineDeltaTransform(master_transform),
-                   facecolors, edgecolors, [], [], [False],
+                   facecolors, edgecolors, [], [], [], [False],
                    [], 'screen')]
         uses = rb._iter_collection_uses_per_path(
             paths, all_transforms, offsets, facecolors, edgecolors)

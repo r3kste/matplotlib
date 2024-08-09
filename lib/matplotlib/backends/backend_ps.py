@@ -549,7 +549,7 @@ translate
 
         for xo, yo, path_id, gc0, rgbFace in self._iter_collection(
                 gc, path_codes, offsets, offset_trans,
-                facecolors, edgecolors, linewidths, linestyles,
+                facecolors, edgecolors, hatchcolors, linewidths, linestyles,
                 antialiaseds, urls, offset_position):
             ps = f"{xo:g} {yo:g} {path_id}"
             self._draw_ps(ps, gc0, rgbFace)

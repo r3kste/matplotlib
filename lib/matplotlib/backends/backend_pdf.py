@@ -2084,7 +2084,7 @@ class RendererPdf(_backend_pdf_ps.RendererPDFPSBase):
         lastx, lasty = 0, 0
         for xo, yo, path_id, gc0, rgbFace in self._iter_collection(
                 gc, path_codes, offsets, offset_trans,
-                facecolors, edgecolors, linewidths, linestyles,
+                facecolors, edgecolors, hatchcolors, linewidths, linestyles,
                 antialiaseds, urls, offset_position):
 
             self.check_gc(gc0, rgbFace)

@@ -748,7 +748,7 @@ class RendererSVG(RendererBase):
 
         for xo, yo, path_id, gc0, rgbFace in self._iter_collection(
                 gc, path_codes, offsets, offset_trans,
-                facecolors, edgecolors, linewidths, linestyles,
+                facecolors, edgecolors, hatchcolors, linewidths, linestyles,
                 antialiaseds, urls, offset_position):
             url = gc0.get_url()
             if url is not None:
