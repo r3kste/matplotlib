@@ -223,3 +223,93 @@ def get_path(hatchpattern, density=6):
             cursor += pattern.num_vertices
 
     return Path(vertices, codes)
+
+
+attrs = [
+    # ("color", "black"), For now it is an attr of gc
+    # ("alpha", 1.0),
+    ("scale", 6.0),
+    ("weight", 1.0),
+    ("angle", 0.0),
+    ("random_rotation", False),
+    ("staggered", False),
+    ("random_placement", False),
+]
+
+
+class HatchStyle:
+    def __init__(self, hatchpattern, **kwargs):
+        self.hatchpattern = hatchpattern
+        self.kwargs = {attr: kwargs.get(attr, default) for attr, default in attrs}
+
+    def get_vertices_and_codes(self):
+        vertices, codes = np.empty((0, 2)), np.empty(0, Path.code_type)
+
+        for hatchpattern in self.hatchpattern:
+            func = hatchpatterns[hatchpattern]
+            for f in func:
+                verts, cods = f(self)
+                vertices = np.concatenate((vertices, verts))
+                codes = np.concatenate((codes, cods))
+
+        return vertices, codes
+
+
+class MarkerHatchStyle(HatchStyle):
+    pass
+
+
+class LineHatchStyle(HatchStyle):
+    def horizontal(self):
+        return np.empty((0, 2)), np.empty(0, Path.code_type)
+
+    def vertical(self):
+        return np.empty((0, 2)), np.empty(0, Path.code_type)
+
+    def north_east(self):
+        num_lines = int(self.kwargs["scale"])
+        if num_lines:
+            num_vertices = (num_lines + 1) * 2
+        else:
+            num_vertices = 0
+
+        vertices = np.empty((num_vertices, 2))
+        codes = np.empty(num_vertices, Path.code_type)
+        steps = np.linspace(-0.5, 0.5, num_lines + 1)
+        vertices[0::2, 0] = 0.0 + steps
+        vertices[0::2, 1] = 0.0 - steps
+        vertices[1::2, 0] = 1.0 + steps
+        vertices[1::2, 1] = 1.0 - steps
+        codes[0::2] = Path.MOVETO
+        codes[1::2] = Path.LINETO
+
+        return vertices, codes
+
+    def south_east(self):
+        num_lines = int(self.kwargs["scale"])
+        if num_lines:
+            num_vertices = (num_lines + 1) * 2
+        else:
+            num_vertices = 0
+
+        vertices = np.empty((num_vertices, 2))
+        codes = np.empty(num_vertices, Path.code_type)
+        steps = np.linspace(-0.5, 0.5, num_lines + 1)
+        vertices[0::2, 0] = 0.0 + steps
+        vertices[0::2, 1] = 1.0 + steps
+        vertices[1::2, 0] = 1.0 + steps
+        vertices[1::2, 1] = 0.0 + steps
+        codes[0::2] = Path.MOVETO
+        codes[1::2] = Path.LINETO
+
+        return vertices, codes
+
+
+hatchpatterns = {
+    "-": (LineHatchStyle.horizontal,),
+    "|": (LineHatchStyle.vertical,),
+    "/": (LineHatchStyle.north_east,),
+    "\\": (LineHatchStyle.south_east,),
+    "+": (LineHatchStyle.horizontal, LineHatchStyle.vertical),
+    "x": (LineHatchStyle.north_east, LineHatchStyle.south_east),
+}

@@ -56,6 +56,7 @@ class Patch(artist.Artist):
                  fill=True,
                  capstyle=None,
                  joinstyle=None,
+                 hatchstyles=None,
                  **kwargs):
         """
         The following kwarg properties are supported
@@ -93,6 +94,7 @@ class Patch(artist.Artist):
         self.set_hatch(hatch)
         self.set_capstyle(capstyle)
         self.set_joinstyle(joinstyle)
+        self.set_hatchstyles(hatchstyles)
 
         if len(kwargs):
             self._internal_update(kwargs)
@@ -571,6 +573,15 @@ class Patch(artist.Artist):
         """Return the hatching pattern."""
         return self._hatch
 
+    def set_hatchstyles(self, hatchstyles):
+        if hatchstyles is None:
+            hatchstyles = []
+        self._hatchstyles = hatchstyles
+        self.stale = True
+
+    def get_hatchstyles(self):
+        return self._hatchstyles
+
     def _draw_paths_with_artist_properties(
             self, renderer, draw_path_args_list):
         """
@@ -605,6 +616,9 @@ class Patch(artist.Artist):
         if self._hatch:
             gc.set_hatch(self._hatch)
             gc.set_hatch_color(self._hatch_color)
+
+        if len(self._hatchstyles):
+            gc.set_hatchstyles(self._hatchstyles)
 
         if self.get_sketch_params() is not None:
             gc.set_sketch_params(*self.get_sketch_params())

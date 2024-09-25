@@ -1037,6 +1037,14 @@ class Path:
         return (get_path(hatchpattern, density)
                 if hatchpattern is not None else None)
 
+    def hatchstyles(hatchstyles):
+        vertices, codes = np.empty((0, 2)), np.empty(0, Path.code_type)
+        for hatchstyle in hatchstyles:
+            verts, cods = hatchstyle.get_vertices_and_codes()
+            vertices = np.concatenate([vertices, verts])
+            codes = np.concatenate([codes, cods])
+        return Path(vertices, codes)
+
     def clip_to_bbox(self, bbox, inside=True):
         """
         Clip the path to the given bounding box.
