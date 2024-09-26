@@ -576,7 +576,7 @@ class Patch(artist.Artist):
     def set_hatchstyles(self, hatchstyles):
         if hatchstyles is None:
             hatchstyles = []
-        self._hatchstyles = hatchstyles
+        self._hatchstyles = np.atleast_1d(hatchstyles)
         self.stale = True
 
     def get_hatchstyles(self):

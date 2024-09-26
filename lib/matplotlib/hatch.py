@@ -267,7 +267,7 @@ class LineHatchStyle(HatchStyle):
         return np.empty((0, 2)), np.empty(0, Path.code_type)
 
     def north_east(self):
-        num_lines = int(self.kwargs["scale"])
+        num_lines = int(self.kwargs["scale"]) * 2
         if num_lines:
             num_vertices = (num_lines + 1) * 2
         else:
@@ -286,7 +286,7 @@ class LineHatchStyle(HatchStyle):
         return vertices, codes
 
     def south_east(self):
-        num_lines = int(self.kwargs["scale"])
+        num_lines = int(self.kwargs["scale"]) * 2
         if num_lines:
             num_vertices = (num_lines + 1) * 2
         else:
