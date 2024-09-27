@@ -228,7 +228,7 @@ def get_path(hatchpattern, density=6):
 attrs = [
     # ("color", "black"), For now it is an attr of gc
     # ("alpha", 1.0),
-    ("scale", 6.0),
+    ("scale", 3.0),
     ("weight", 1.0),
     ("angle", 0.0),
     ("random_rotation", False),
