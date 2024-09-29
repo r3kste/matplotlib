@@ -242,7 +242,29 @@ class HatchStyle:
         self.hatchpattern = hatchpattern
         self.kwargs = {attr: kwargs.get(attr, default) for attr, default in attrs}
 
-    def get_vertices_and_codes(self):
+    def rotate_path(self, vertices, angle=None):
+        if angle is None:
+            angle = self.kwargs["angle"]
+        angle_rad = np.deg2rad(angle)
+
+        center = np.mean(vertices, axis=0)
+        vertices -= center
+
+        scaling = np.sin(angle_rad) + np.cos(angle_rad)
+        vertices *= scaling
+
+        rotation_matrix = np.array(
+            [
+                [np.cos(angle_rad), -np.sin(angle_rad)],
+                [np.sin(angle_rad), np.cos(angle_rad)],
+            ]
+        )
+        vertices = np.dot(vertices, rotation_matrix)
+        vertices += center
+        return vertices
+
+    def get_vertices_and_codes(self, hatch_buffer_size=100):
+        self.hatch_buffer_size = hatch_buffer_size
         vertices, codes = np.empty((0, 2)), np.empty(0, Path.code_type)
 
         for hatchpattern in self.hatchpattern:
@@ -252,6 +274,7 @@ class HatchStyle:
                 vertices = np.concatenate((vertices, verts))
                 codes = np.concatenate((codes, cods))
 
+        vertices = self.rotate_path(vertices)
         return vertices, codes
 
 
@@ -261,13 +284,47 @@ class MarkerHatchStyle(HatchStyle):
 
 class LineHatchStyle(HatchStyle):
     def horizontal(self):
-        return np.empty((0, 2)), np.empty(0, Path.code_type)
+        num_lines = round(self.kwargs["scale"] * 2 * self.hatch_buffer_size / 100.0)
+        if num_lines:
+            num_vertices = num_lines * 2
+        else:
+            num_vertices = 0
+
+        vertices = np.empty((num_vertices, 2))
+        codes = np.empty(num_vertices, Path.code_type)
+        steps, stepsize = np.linspace(0.0, 1.0, num_lines, False, retstep=True)
+        steps += stepsize / 2.0
+        vertices[0::2, 0] = 0.0
+        vertices[0::2, 1] = steps
+        vertices[1::2, 0] = 1.0
+        vertices[1::2, 1] = steps
+        codes[0::2] = Path.MOVETO
+        codes[1::2] = Path.LINETO
+
+        return vertices, codes
 
     def vertical(self):
-        return np.empty((0, 2)), np.empty(0, Path.code_type)
+        num_lines = round(self.kwargs["scale"] * 2 * self.hatch_buffer_size / 100.0)
+        if num_lines:
+            num_vertices = num_lines * 2
+        else:
+            num_vertices = 0
+
+        vertices = np.empty((num_vertices, 2))
+        codes = np.empty(num_vertices, Path.code_type)
+        steps, stepsize = np.linspace(0.0, 1.0, num_lines, False, retstep=True)
+        steps += stepsize / 2.0
+        vertices[0::2, 0] = steps
+        vertices[0::2, 1] = 0.0
+        vertices[1::2, 0] = steps
+        vertices[1::2, 1] = 1.0
+        codes[0::2] = Path.MOVETO
+        codes[1::2] = Path.LINETO
+
+        return vertices, codes
 
     def north_east(self):
-        num_lines = int(self.kwargs["scale"]) * 2
+        num_lines = round(self.kwargs["scale"] * 2 * self.hatch_buffer_size / 100.0)
         if num_lines:
             num_vertices = (num_lines + 1) * 2
         else:
@@ -286,7 +343,7 @@ class LineHatchStyle(HatchStyle):
         return vertices, codes
 
     def south_east(self):
-        num_lines = int(self.kwargs["scale"]) * 2
+        num_lines = round(self.kwargs["scale"] * 2 * self.hatch_buffer_size / 100.0)
         if num_lines:
             num_vertices = (num_lines + 1) * 2
         else:

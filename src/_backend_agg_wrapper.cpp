@@ -139,9 +139,10 @@ static int PyRendererAgg_init(PyRendererAgg *self, PyObject *args, PyObject *kwd
     unsigned int width;
     unsigned int height;
     double dpi;
+    int hatch_buffer_size;
     int debug = 0;
 
-    if (!PyArg_ParseTuple(args, "IId|i:RendererAgg", &width, &height, &dpi, &debug)) {
+    if (!PyArg_ParseTuple(args, "IId|ii:RendererAgg", &width, &height, &dpi, &hatch_buffer_size, &debug)) {
         return -1;
     }
 
@@ -159,7 +160,11 @@ static int PyRendererAgg_init(PyRendererAgg *self, PyObject *args, PyObject *kwd
         return -1;
     }
 
-    CALL_CPP_INIT("RendererAgg", self->x = new RendererAgg(width, height, dpi))
+    if (PySequence_Size(args) == 3) {
+        CALL_CPP_INIT("RendererAgg", self->x = new RendererAgg(width, height, dpi))
+    } else {
+        CALL_CPP_INIT("RendererAgg", self->x = new RendererAgg(width, height, dpi, hatch_buffer_size))
+    }
 
     return 0;
 }

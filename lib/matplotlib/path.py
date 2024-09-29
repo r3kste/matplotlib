@@ -1037,10 +1037,10 @@ class Path:
         return (get_path(hatchpattern, density)
                 if hatchpattern is not None else None)
 
-    def hatchstyles(hatchstyles):
+    def hatchstyles(hatchstyles, hatchsize=100):
         vertices, codes = np.empty((0, 2)), np.empty(0, Path.code_type)
         for hatchstyle in hatchstyles:
-            verts, cods = hatchstyle.get_vertices_and_codes()
+            verts, cods = hatchstyle.get_vertices_and_codes(hatchsize)
             vertices = np.concatenate([vertices, verts])
             codes = np.concatenate([codes, cods])
         return Path(vertices, codes)

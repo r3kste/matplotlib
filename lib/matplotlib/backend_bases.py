@@ -936,6 +936,9 @@ class GraphicsContextBase:
         """
         self._snap = snap
 
+    def set_hatch_buffer_size(self, size):
+        self._hatch_buffer_size = size
+
     def set_hatch(self, hatch):
         """Set the hatch style (for fills)."""
         self._hatch = hatch
@@ -947,7 +950,7 @@ class GraphicsContextBase:
     def get_hatch_path(self, density=6.0):
         """Return a `.Path` for the current hatch."""
         if len(self.get_hatchstyles()):
-            return Path.hatchstyles(self.get_hatchstyles())
+            return Path.hatchstyles(self.get_hatchstyles(), self._hatch_buffer_size)
         hatch = self.get_hatch()
         if hatch is None:
             return None

@@ -67,7 +67,14 @@ class RendererAgg(RendererBase):
         self.dpi = dpi
         self.width = width
         self.height = height
-        self._renderer = _RendererAgg(int(width), int(height), dpi)
+        hatchstyles = False
+        if hatchstyles:
+            hatch_buffer_size = max(width, height)
+        else:
+            hatch_buffer_size = dpi
+        hatch_buffer_size = int(hatch_buffer_size)
+        self.hatch_buffer_size = hatch_buffer_size
+        self._renderer = _RendererAgg(int(width), int(height), dpi, hatch_buffer_size)
         self._filter_renderers = []
 
         self._update_methods()
@@ -95,6 +102,7 @@ class RendererAgg(RendererBase):
         # docstring inherited
         nmax = mpl.rcParams['agg.path.chunksize']  # here at least for testing
         npts = path.vertices.shape[0]
+        gc.set_hatch_buffer_size(self.hatch_buffer_size)
 
         if (npts > nmax > 100 and path.should_simplify and
                 rgbFace is None and gc.get_hatch() is None):
