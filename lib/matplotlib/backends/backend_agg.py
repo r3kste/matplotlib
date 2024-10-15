@@ -67,7 +67,10 @@ class RendererAgg(RendererBase):
         self.dpi = dpi
         self.width = width
         self.height = height
-        hatchstyles = False
+        # TODO: find a way to make this configurable
+        # The problem is with image comparisons in the tests.
+        # Bigger hatch square causes bigger markers and less dense hatches.
+        hatchstyles = True
         if hatchstyles:
             hatch_buffer_size = max(width, height)
         else:

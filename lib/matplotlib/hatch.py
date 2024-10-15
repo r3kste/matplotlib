@@ -228,12 +228,12 @@ def get_path(hatchpattern, density=6):
 attrs = [
     # ("color", "black"), For now it is an attr of gc
     # ("alpha", 1.0),
-    ("scale", 3.0),
-    ("weight", 1.0),
-    ("angle", 0.0),
-    ("random_rotation", False),
-    ("staggered", False),
-    ("random_placement", False),
+    ('scale', 6.0),
+    ('weight', 1.0),
+    ('angle', 0.0),
+    ('random_rotation', False),
+    ('staggered', False),
+    ('random_placement', False),
 ]
 
 
@@ -283,8 +283,10 @@ class MarkerHatchStyle(HatchStyle):
 
 
 class LineHatchStyle(HatchStyle):
-    def horizontal(self):
-        num_lines = round(self.kwargs["scale"] * 2 * self.hatch_buffer_size / 100.0)
+    def horizontal(hatchstyle):
+        num_lines = round(
+            hatchstyle.kwargs['scale'] * hatchstyle.hatch_buffer_size / 100.0
+        )
         if num_lines:
             num_vertices = num_lines * 2
         else:
@@ -303,8 +305,10 @@ class LineHatchStyle(HatchStyle):
 
         return vertices, codes
 
-    def vertical(self):
-        num_lines = round(self.kwargs["scale"] * 2 * self.hatch_buffer_size / 100.0)
+    def vertical(hatchstyle):
+        num_lines = round(
+            hatchstyle.kwargs['scale'] * hatchstyle.hatch_buffer_size / 100.0
+        )
         if num_lines:
             num_vertices = num_lines * 2
         else:
@@ -323,8 +327,10 @@ class LineHatchStyle(HatchStyle):
 
         return vertices, codes
 
-    def north_east(self):
-        num_lines = round(self.kwargs["scale"] * 2 * self.hatch_buffer_size / 100.0)
+    def north_east(hatchstyle):
+        num_lines = round(
+            hatchstyle.kwargs['scale'] * hatchstyle.hatch_buffer_size / 100.0
+        )
         if num_lines:
             num_vertices = (num_lines + 1) * 2
         else:
@@ -342,8 +348,10 @@ class LineHatchStyle(HatchStyle):
 
         return vertices, codes
 
-    def south_east(self):
-        num_lines = round(self.kwargs["scale"] * 2 * self.hatch_buffer_size / 100.0)
+    def south_east(hatchstyle):
+        num_lines = round(
+            hatchstyle.kwargs['scale'] * hatchstyle.hatch_buffer_size / 100.0
+        )
         if num_lines:
             num_vertices = (num_lines + 1) * 2
         else:
