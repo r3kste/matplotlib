@@ -228,12 +228,12 @@ def get_path(hatchpattern, density=6):
 attrs = [
     # ("color", "black"), For now it is an attr of gc
     # ("alpha", 1.0),
-    ('scale', 6.0),
+    ('scale', 6),
     ('weight', 1.0),
     ('angle', 0.0),
     ('random_rotation', False),
     ('staggered', False),
-    ('random_placement', False),
+    ('filled', True),
 ]
 
 
@@ -242,7 +242,9 @@ class HatchStyle:
         self.hatchpattern = hatchpattern
         self.kwargs = {attr: kwargs.get(attr, default) for attr, default in attrs}
 
-    def rotate_path(self, vertices, angle=None):
+    def rotate_path(self, vertices, angle=None, scale_correction=True):
+        vertices = vertices.copy()
+
         if angle is None:
             angle = self.kwargs["angle"]
         angle_rad = np.deg2rad(angle)
@@ -250,8 +252,9 @@ class HatchStyle:
         center = np.mean(vertices, axis=0)
         vertices -= center
 
-        scaling = np.sin(angle_rad) + np.cos(angle_rad)
-        vertices *= scaling
+        if scale_correction:
+            scaling = abs(np.sin(angle_rad)) + abs(np.cos(angle_rad))
+            vertices *= scaling
 
         rotation_matrix = np.array(
             [
@@ -267,19 +270,85 @@ class HatchStyle:
         self.hatch_buffer_size = hatch_buffer_size
         vertices, codes = np.empty((0, 2)), np.empty(0, Path.code_type)
 
-        for hatchpattern in self.hatchpattern:
-            func = hatchpatterns[hatchpattern]
-            for f in func:
-                verts, cods = f(self)
-                vertices = np.concatenate((vertices, verts))
-                codes = np.concatenate((codes, cods))
+        if self.hatchpattern in hatchpatterns:
+            # This is for line hatches
+            for func in np.atleast_1d(hatchpatterns[self.hatchpattern]):
+                vertices_part, codes_part = func(self)
+                vertices_part = self.rotate_path(vertices_part)
 
-        vertices = self.rotate_path(vertices)
+                vertices = np.concatenate((vertices, vertices_part))
+                codes = np.concatenate((codes, codes_part))
+        else:
+            # This is for marker hatches
+            if self.hatchpattern not in MarkerHatchStyle.marker_paths:
+                raise ValueError(f"Unknown hatch pattern: {self.hatchpattern}")
+            func = MarkerHatchStyle.marker_pattern
+            vertices_part, codes_part = func(self)
+
+            vertices = np.concatenate((vertices, vertices_part))
+            codes = np.concatenate((codes, codes_part))
+
         return vertices, codes
 
 
 class MarkerHatchStyle(HatchStyle):
-    pass
+    marker_paths = {
+        'o': Path.unit_circle,
+        'O': Path.unit_circle,
+        '*': (Path.unit_regular_star, 5),  # TODO: is there a better way to do this?
+    }
+
+    # TODO: saner defaults or no?
+    marker_sizes = {
+        'o': 0.2,
+        'O': 0.35,
+        '*': 1.0 / 3.0,
+    }
+
+    def _get_marker_path(marker):
+        func = np.atleast_1d(MarkerHatchStyle.marker_paths[marker])
+        path = func[0](*func[1:])
+        size = MarkerHatchStyle.marker_sizes[marker]
+
+        return Path(
+            vertices=path.vertices * size,
+            codes=path.codes,
+        )
+
+    def marker_pattern(hatchstyle):
+        size = hatchstyle.kwargs['weight']
+        num_rows = round(
+            hatchstyle.kwargs['scale'] * hatchstyle.hatch_buffer_size / 100.0
+        )
+        path = MarkerHatchStyle._get_marker_path(hatchstyle.hatchpattern)
+        shape_vertices = hatchstyle.rotate_path(path.vertices, scale_correction=False)
+        shape_codes = path.codes
+
+        offset = 1.0 / num_rows
+        shape_vertices = shape_vertices * offset * size
+
+        if not hatchstyle.kwargs['filled']:
+            shape_vertices = np.concatenate(
+                [shape_vertices, shape_vertices[::-1] * 0.9]
+            )
+            shape_codes = np.concatenate([shape_codes, shape_codes])
+
+        vertices_parts = []
+        codes_parts = []
+        for row in range(num_rows + 1):
+            if row % 2 == 0:
+                cols = np.linspace(0, 1, num_rows + 1)
+            else:
+                cols = np.linspace(offset / 2, 1 - offset / 2, num_rows)
+            row_pos = row * offset
+            for col_pos in cols:
+                vertices_parts.append(shape_vertices + [col_pos, row_pos])
+                codes_parts.append(shape_codes)
+
+        vertices = np.concatenate(vertices_parts)
+        codes = np.concatenate(codes_parts)
+
+        return vertices, codes
 
 
 class LineHatchStyle(HatchStyle):
@@ -371,10 +440,10 @@ class LineHatchStyle(HatchStyle):
 
 
 hatchpatterns = {
-    "-": (LineHatchStyle.horizontal,),
-    "|": (LineHatchStyle.vertical,),
-    "/": (LineHatchStyle.north_east,),
-    "\\": (LineHatchStyle.south_east,),
-    "+": (LineHatchStyle.horizontal, LineHatchStyle.vertical),
-    "x": (LineHatchStyle.north_east, LineHatchStyle.south_east),
+    '-': LineHatchStyle.horizontal,
+    '|': LineHatchStyle.vertical,
+    '/': LineHatchStyle.north_east,
+    '\\': LineHatchStyle.south_east,
+    '+': (LineHatchStyle.horizontal, LineHatchStyle.vertical),
+    'x': (LineHatchStyle.north_east, LineHatchStyle.south_east),
 }
