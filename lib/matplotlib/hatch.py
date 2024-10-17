@@ -242,7 +242,7 @@ class HatchStyle:
         self.hatchpattern = hatchpattern
         self.kwargs = {attr: kwargs.get(attr, default) for attr, default in attrs}
 
-    def rotate_path(self, vertices, angle=None, scale_correction=True):
+    def rotate_vertices(self, vertices, angle=None, scale_correction=True):
         vertices = vertices.copy()
 
         if angle is None:
@@ -274,7 +274,7 @@ class HatchStyle:
             # This is for line hatches
             for func in np.atleast_1d(hatchpatterns[self.hatchpattern]):
                 vertices_part, codes_part = func(self)
-                vertices_part = self.rotate_path(vertices_part)
+                vertices_part = self.rotate_vertices(vertices_part)
 
                 vertices = np.concatenate((vertices, vertices_part))
                 codes = np.concatenate((codes, codes_part))
@@ -321,7 +321,9 @@ class MarkerHatchStyle(HatchStyle):
             hatchstyle.kwargs['scale'] * hatchstyle.hatch_buffer_size / 100.0
         )
         path = MarkerHatchStyle._get_marker_path(hatchstyle.hatchpattern)
-        shape_vertices = hatchstyle.rotate_path(path.vertices, scale_correction=False)
+        shape_vertices = hatchstyle.rotate_vertices(
+            path.vertices, scale_correction=False
+        )
         shape_codes = path.codes
 
         offset = 1.0 / num_rows
