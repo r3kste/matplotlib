@@ -225,22 +225,24 @@ def get_path(hatchpattern, density=6):
     return Path(vertices, codes)
 
 
-attrs = [
-    # ("color", "black"), For now it is an attr of gc
-    # ("alpha", 1.0),
-    ('scale', 6),
-    ('weight', 1.0),
-    ('angle', 0.0),
-    ('random_rotation', False),
-    ('staggered', False),
-    ('filled', True),
-]
+attrs = {
+    'scale': 6,
+    'weight': 1.0,
+    'angle': 0.0,
+    'random_rotation': False,
+    'random_placement': False,
+    'x_stagger': 0.5,
+    'y_stagger': 0.0,
+    'filled': True,
+}
 
 
 class HatchStyle:
     def __init__(self, hatchpattern, **kwargs):
         self.hatchpattern = hatchpattern
-        self.kwargs = {attr: kwargs.get(attr, default) for attr, default in attrs}
+        self.kwargs = {
+            attr: kwargs.get(attr, default) for attr, default in attrs.items()
+        }
 
     def rotate_vertices(self, vertices, angle=None, scale_correction=True):
         vertices = vertices.copy()
@@ -308,7 +310,7 @@ class MarkerHatchStyle(HatchStyle):
     def _get_marker_path(marker):
         func = np.atleast_1d(MarkerHatchStyle.marker_paths[marker])
         path = func[0](*func[1:])
-        size = MarkerHatchStyle.marker_sizes[marker]
+        size = MarkerHatchStyle.marker_sizes.get(marker, attrs['weight'])
 
         return Path(
             vertices=path.vertices * size,
@@ -321,34 +323,46 @@ class MarkerHatchStyle(HatchStyle):
             hatchstyle.kwargs['scale'] * hatchstyle.hatch_buffer_size / 100.0
         )
         path = MarkerHatchStyle._get_marker_path(hatchstyle.hatchpattern)
-        shape_vertices = hatchstyle.rotate_vertices(
+        marker_vertices = hatchstyle.rotate_vertices(
             path.vertices, scale_correction=False
         )
-        shape_codes = path.codes
+        marker_codes = path.codes
 
         offset = 1.0 / num_rows
-        shape_vertices = shape_vertices * offset * size
+        marker_vertices = marker_vertices * offset * size
+        x_stagger = hatchstyle.kwargs['x_stagger'] * offset
+        y_stagger = hatchstyle.kwargs['y_stagger'] * offset
 
         if not hatchstyle.kwargs['filled']:
-            shape_vertices = np.concatenate(
-                [shape_vertices, shape_vertices[::-1] * 0.9]
+            marker_vertices = np.concatenate(
+                [marker_vertices, marker_vertices[::-1] * 0.9]
             )
-            shape_codes = np.concatenate([shape_codes, shape_codes])
+            marker_codes = np.concatenate([marker_codes, marker_codes])
 
-        vertices_parts = []
-        codes_parts = []
+        vertices = np.empty((0, 2))
+        codes = np.empty(0, Path.code_type)
         for row in range(num_rows + 1):
+            row_pos = row * offset
             if row % 2 == 0:
                 cols = np.linspace(0, 1, num_rows + 1)
             else:
-                cols = np.linspace(offset / 2, 1 - offset / 2, num_rows)
-            row_pos = row * offset
-            for col_pos in cols:
-                vertices_parts.append(shape_vertices + [col_pos, row_pos])
-                codes_parts.append(shape_codes)
+                cols = np.linspace(x_stagger, 1 + x_stagger, num_rows + 1)
 
-        vertices = np.concatenate(vertices_parts)
-        codes = np.concatenate(codes_parts)
+            for i, col_pos in enumerate(cols):
+                vertices_part = marker_vertices + [col_pos, row_pos]
+                if i % 2 == 1:
+                    vertices_part += [0, y_stagger]
+
+                if hatchstyle.kwargs['random_rotation']:
+                    vertices_part = hatchstyle.rotate_vertices(
+                        vertices_part, np.random.uniform(0, 360), scale_correction=False
+                    )
+
+                if hatchstyle.kwargs['random_placement']:
+                    vertices_part += np.random.uniform(-offset / 4, offset / 4, 2)
+
+                vertices = np.concatenate((vertices, vertices_part))
+                codes = np.concatenate((codes, marker_codes))
 
         return vertices, codes
 
