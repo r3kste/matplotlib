@@ -619,6 +619,7 @@ class Patch(artist.Artist):
 
         if len(self._hatchstyles):
             gc.set_hatchstyles(self._hatchstyles)
+            gc.set_hatch_color(self._hatch_color)
 
         if self.get_sketch_params() is not None:
             gc.set_sketch_params(*self.get_sketch_params())

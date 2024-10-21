@@ -105,7 +105,7 @@ class RendererAgg(RendererBase):
         # docstring inherited
         nmax = mpl.rcParams['agg.path.chunksize']  # here at least for testing
         npts = path.vertices.shape[0]
-        gc.set_hatch_buffer_size(self.hatch_buffer_size)
+        gc.set_hatch_scale(self.hatch_buffer_size / self.dpi)
 
         if (npts > nmax > 100 and path.should_simplify and
                 rgbFace is None and gc.get_hatch() is None):
