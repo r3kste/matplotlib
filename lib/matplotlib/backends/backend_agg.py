@@ -71,7 +71,7 @@ class RendererAgg(RendererBase):
             (max(width, height) / dpi) if RendererAgg.hatchstyles_enabled else 1.0
         )
         self._renderer = _RendererAgg(int(width), int(height), dpi,
-                                      self.hatch_buffer_scale)
+                                      RendererAgg.hatchstyles_enabled)
         self._filter_renderers = []
 
         self._update_methods()

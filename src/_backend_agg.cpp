@@ -5,7 +5,7 @@
 #include <Python.h>
 #include "_backend_agg.h"
 
-RendererAgg::RendererAgg(unsigned int width, unsigned int height, double dpi, double hatch_buffer_scale)
+RendererAgg::RendererAgg(unsigned int width, unsigned int height, double dpi, bool hatchstyles_enabled)
     : width(width),
       height(height),
       dpi(dpi),
@@ -48,7 +48,7 @@ RendererAgg::RendererAgg(unsigned int width, unsigned int height, double dpi, do
     rendererBase.clear(_fill_color);
     rendererAA.attach(rendererBase);
     rendererBin.attach(rendererBase);
-    hatch_size = int(dpi * hatch_buffer_scale);
+    hatch_size = hatchstyles_enabled ? (width > height ? width : height) : int(dpi);
     hatchBuffer = new agg::int8u[hatch_size * hatch_size * 4];
     hatchRenderingBuffer.attach(hatchBuffer, hatch_size, hatch_size, hatch_size * 4);
 }
