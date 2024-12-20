@@ -609,6 +609,8 @@ class Patch(artist.Artist):
         """Set the hatchstyle(s) for the patch."""
         if hatchstyle is None:
             hatchstyle = []
+        else:
+            mpl.backends.backend_agg.RendererAgg.hatchstyles_enabled = True
         self._hatchstyle = np.atleast_1d(hatchstyle)
         self.stale = True
 
