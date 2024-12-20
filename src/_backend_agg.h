@@ -127,7 +127,7 @@ class RendererAgg
     /* TODO: Remove facepair_t */
     typedef std::pair<bool, agg::rgba> facepair_t;
 
-    RendererAgg(unsigned int width, unsigned int height, double dpi);
+    RendererAgg(unsigned int width, unsigned int height, double dpi, double hatch_buffer_scale=1.0);
 
     virtual ~RendererAgg();
 

@@ -214,8 +214,8 @@ PyRendererAgg_draw_gouraud_triangles(RendererAgg *self,
 PYBIND11_MODULE(_backend_agg, m, py::mod_gil_not_used())
 {
     py::class_<RendererAgg>(m, "RendererAgg", py::buffer_protocol())
-        .def(py::init<unsigned int, unsigned int, double>(),
-             "width"_a, "height"_a, "dpi"_a)
+        .def(py::init<unsigned int, unsigned int, double, double>(),
+             "width"_a, "height"_a, "dpi"_a, "hatch_buffer_scale"_a = 1.0)
 
         .def("draw_path", &PyRendererAgg_draw_path,
              "gc"_a, "path"_a, "trans"_a, "face"_a = nullptr)
