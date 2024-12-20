@@ -695,6 +695,7 @@ class GraphicsContextBase:
         self._hatch = None
         self._hatch_color = None
         self._hatch_linewidth = rcParams['hatch.linewidth']
+        self._hatchstyle = []
         self._url = None
         self._gid = None
         self._snap = None
@@ -712,6 +713,7 @@ class GraphicsContextBase:
         self._joinstyle = gc._joinstyle
         self._linestyle = gc._linestyle
         self._linewidth = gc._linewidth
+        self._hatchstyle = gc._hatchstyle
         self._rgb = gc._rgb
         self._hatch = gc._hatch
         self._hatch_color = gc._hatch_color
@@ -937,6 +939,9 @@ class GraphicsContextBase:
         """
         self._snap = snap
 
+    def set_hatch_buffer_scale(self, scale):
+        self._hatch_buffer_scale = scale
+
     def set_hatch(self, hatch):
         """Set the hatch style (for fills)."""
         self._hatch = hatch
@@ -946,7 +951,9 @@ class GraphicsContextBase:
         return self._hatch
 
     def get_hatch_path(self, density=6.0):
-        """Return a `.Path` for the current hatch."""
+        """Return a `.Path` for the current hatch or hatchstyle"""
+        if len(self.get_hatchstyle()):
+            return Path.hatchstyle(self.get_hatchstyle(), self._hatch_buffer_scale)
         hatch = self.get_hatch()
         if hatch is None:
             return None
@@ -967,6 +974,14 @@ class GraphicsContextBase:
     def set_hatch_linewidth(self, hatch_linewidth):
         """Set the hatch linewidth."""
         self._hatch_linewidth = hatch_linewidth
+
+    def get_hatchstyle(self):
+        """Get the hatch style."""
+        return self._hatchstyle
+
+    def set_hatchstyle(self, hatchstyle):
+        """Set the hatch style."""
+        self._hatchstyle = hatchstyle
 
     def get_sketch_params(self):
         """
