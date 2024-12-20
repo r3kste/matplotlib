@@ -1040,6 +1040,11 @@ class Path:
     def hatchstyle(hatchstyles, hatch_buffer_scale=1.0):
         vertices, codes = np.empty((0, 2)), np.empty(0, Path.code_type)
         for hatchstyle in hatchstyles:
+            hatchpattern = hatchstyle.get("hatch", None)
+            if hatchpattern is None:
+                print("Hatch pattern not provided.")  # TODO: make this a warning
+                continue
+            hatchstyle = mpl.hatch.HatchStyle(hatchpattern, **hatchstyle)
             verts, cods = hatchstyle.get_vertices_and_codes(hatch_buffer_scale)
             vertices = np.concatenate([vertices, verts])
             codes = np.concatenate([codes, cods])

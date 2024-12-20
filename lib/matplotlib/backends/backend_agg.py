@@ -59,6 +59,7 @@ class RendererAgg(RendererBase):
     The renderer handles all the drawing primitives using a graphics
     context instance that controls the colors/styles
     """
+    hatchstyles_enabled = False
 
     def __init__(self, width, height, dpi):
         super().__init__()
@@ -66,9 +67,8 @@ class RendererAgg(RendererBase):
         self.dpi = dpi
         self.width = width
         self.height = height
-        hatchstyles_enabled = True
         self.hatch_buffer_scale = (
-            (max(width, height) / dpi) if hatchstyles_enabled else 1.0
+            (max(width, height) / dpi) if RendererAgg.hatchstyles_enabled else 1.0
         )
         self._renderer = _RendererAgg(int(width), int(height), dpi,
                                       self.hatch_buffer_scale)
