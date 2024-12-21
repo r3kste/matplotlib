@@ -1041,7 +1041,7 @@ class Path:
         for hatchstyle in hatchstyles:
             hatchpattern = hatchstyle.get("hatch", None)
             if hatchpattern is None:
-                print("Hatch pattern not provided.")  # TODO: make this a warning
+                _api.warn_external("Hatch style must specify a hatch pattern.")
                 continue
             hatchstyle = mpl.hatch.HatchStyle(hatchpattern, **hatchstyle)
             verts, cods = hatchstyle.get_vertices_and_codes(hatch_buffer_scale)
