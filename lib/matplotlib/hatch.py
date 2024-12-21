@@ -319,20 +319,8 @@ class LineHatchStyle(HatchStyle):
         hatchstyle.kwargs["angle"] += 90
         return LineHatchStyle.line_pattern(hatchstyle)
 
-    def north_east(hatchstyle):
-        hatchstyle.kwargs["angle"] += -45
-        return LineHatchStyle.line_pattern(hatchstyle)
-
-    def south_east(hatchstyle):
-        hatchstyle.kwargs["angle"] += 45
-        return LineHatchStyle.line_pattern(hatchstyle)
-
 
 hatchpatterns = {
     "-": LineHatchStyle.horizontal,
-    "|": LineHatchStyle.vertical,
-    "/": LineHatchStyle.north_east,
-    "\\": LineHatchStyle.south_east,
     "+": (LineHatchStyle.horizontal, LineHatchStyle.vertical),
-    "x": (LineHatchStyle.north_east, LineHatchStyle.south_east),
 }
