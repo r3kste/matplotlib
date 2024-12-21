@@ -229,11 +229,6 @@ attrs = {
     "scale": 6,
     "weight": 1.0,
     "angle": 0.0,
-    "random_rotation": False,
-    "random_placement": False,
-    "x_stagger": 0.5,
-    "y_stagger": 0.0,
-    "filled": True,
 }
 
 
@@ -273,7 +268,6 @@ class HatchStyle:
         vertices, codes = np.empty((0, 2)), np.empty(0, Path.code_type)
 
         if self.hatchpattern in hatchpatterns:
-            # This is for line hatches
             for func in np.atleast_1d(hatchpatterns[self.hatchpattern]):
                 vertices_part, codes_part = func(self)
                 vertices_part = self._rotate_vertices(vertices_part)
@@ -281,86 +275,7 @@ class HatchStyle:
                 vertices = np.concatenate((vertices, vertices_part))
                 codes = np.concatenate((codes, codes_part))
         else:
-            # This is for marker hatches
-            if self.hatchpattern not in MarkerHatchStyle.marker_paths:
-                raise ValueError(f"Unknown hatch pattern: {self.hatchpattern}")
-            func = MarkerHatchStyle.marker_pattern
-            vertices_part, codes_part = func(self)
-
-            vertices = np.concatenate((vertices, vertices_part))
-            codes = np.concatenate((codes, codes_part))
-
-        return vertices, codes
-
-
-class MarkerHatchStyle(HatchStyle):
-    marker_paths = {
-        "o": Path.unit_circle,
-        "O": Path.unit_circle,
-        "*": (Path.unit_regular_star, 5),  # TODO: is there a better way to do this?
-    }
-
-    # TODO: saner defaults or no?
-    marker_sizes = {
-        "o": 0.2,
-        "O": 0.35,
-        "*": 1.0 / 3.0,
-    }
-
-    def _get_marker_path(marker):
-        func = np.atleast_1d(MarkerHatchStyle.marker_paths[marker])
-        path = func[0](*func[1:])
-        size = MarkerHatchStyle.marker_sizes.get(marker, attrs["weight"])
-
-        return Path(
-            vertices=path.vertices * size,
-            codes=path.codes,
-        )
-
-    def marker_pattern(hatchstyle):
-        size = hatchstyle.kwargs["weight"]
-        num_rows = round(hatchstyle.kwargs["scale"] * hatchstyle.hatch_buffer_scale)
-        path = MarkerHatchStyle._get_marker_path(hatchstyle.hatchpattern)
-        marker_vertices = hatchstyle._rotate_vertices(
-            path.vertices, scale_correction=False
-        )
-        marker_codes = path.codes
-
-        offset = 1.0 / num_rows
-        marker_vertices = marker_vertices * offset * size
-        x_stagger = hatchstyle.kwargs["x_stagger"] * offset
-        y_stagger = hatchstyle.kwargs["y_stagger"] * offset
-
-        if not hatchstyle.kwargs["filled"]:
-            marker_vertices = np.concatenate(
-                [marker_vertices, marker_vertices[::-1] * 0.9]
-            )
-            marker_codes = np.concatenate([marker_codes, marker_codes])
-
-        vertices = np.empty((0, 2))
-        codes = np.empty(0, Path.code_type)
-        for row in range(num_rows + 1):
-            row_pos = row * offset
-            if row % 2 == 0:
-                cols = np.linspace(0, 1, num_rows + 1)
-            else:
-                cols = np.linspace(x_stagger, 1 + x_stagger, num_rows + 1)
-
-            for i, col_pos in enumerate(cols):
-                vertices_part = marker_vertices + [col_pos, row_pos]
-                if i % 2 == 1:
-                    vertices_part += [0, y_stagger]
-
-                if hatchstyle.kwargs["random_rotation"]:
-                    vertices_part = hatchstyle._rotate_vertices(
-                        vertices_part, np.random.uniform(0, 360), scale_correction=False
-                    )
-
-                if hatchstyle.kwargs["random_placement"]:
-                    vertices_part += np.random.uniform(-offset / 4, offset / 4, 2)
-
-                vertices = np.concatenate((vertices, vertices_part))
-                codes = np.concatenate((codes, marker_codes))
+            _api.warn_external(f"Unknown hatch pattern: {self.hatchpattern}")
 
         return vertices, codes
 
