@@ -59,8 +59,6 @@ class RendererAgg(RendererBase):
     The renderer handles all the drawing primitives using a graphics
     context instance that controls the colors/styles
     """
-    hatchstyles_enabled = False
-
     def __init__(self, width, height, dpi):
         super().__init__()
 

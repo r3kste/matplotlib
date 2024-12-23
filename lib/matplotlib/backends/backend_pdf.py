@@ -1541,6 +1541,17 @@ end"""
             face = tuple(face)
         hatch_style = (edge, face, hatch, lw)
 
+        if isinstance(hatch, list):
+            hatch_tuple = tuple(tuple(h.items()) for h in hatch)
+            hatch_style = (edge, face, hatch_tuple, lw)
+            pattern = self._hatch_patterns.get(hatch_style, None)
+            if pattern is not None:
+                return pattern
+
+            name = next(self._hatch_pattern_seq)
+            self._hatch_patterns[hatch_style] = name
+            return name
+
         pattern = self._hatch_patterns.get(hatch_style, None)
         if pattern is not None:
             return pattern
@@ -1557,6 +1568,18 @@ end"""
         hatchDict = dict()
         sidelen = 72.0
         for hatch_style, name in self._hatch_patterns.items():
+            stroke_rgb, fill_rgb, hatch, lw = hatch_style
+            filled = True
+            if isinstance(hatch, tuple):
+                custom_hatch = [dict(h) for h in hatch]
+                hatch_buffer_scale = custom_hatch[0].get('hatch_buffer_scale', 1.0)
+                sidelen = 72.0 * hatch_buffer_scale
+                path = Path.hatchstyle(custom_hatch)
+            else:
+                sidelen = 72.0
+                path = Path.hatch(hatch)
+                filled = filled and all(h not in '|-/\\+xX' for h in hatch)
+
             ob = self.reserveObject('hatch pattern')
             hatchDict[name] = ob
             res = {'Procsets':
@@ -1571,7 +1594,6 @@ end"""
                  # Change origin to match Agg at top-left.
                  'Matrix': [1, 0, 0, 1, 0, self.height * 72]})
 
-            stroke_rgb, fill_rgb, hatch, lw = hatch_style
             self.output(stroke_rgb[0], stroke_rgb[1], stroke_rgb[2],
                         Op.setrgb_stroke)
             if fill_rgb is not None:
@@ -1583,9 +1605,12 @@ end"""
             self.output(lw, Op.setlinewidth)
 
             self.output(*self.pathOperations(
-                Path.hatch(hatch),
+                path,
                 Affine2D().scale(sidelen),
                 simplify=False))
+            if filled:
+                self.output(stroke_rgb[0], stroke_rgb[1], stroke_rgb[2],
+                            Op.setrgb_nonstroke)
             self.output(Op.fill_stroke)
 
             self.endStream()
@@ -1954,6 +1979,9 @@ class RendererPdf(_backend_pdf_ps.RendererPDFPSBase):
         self.file = file
         self.gc = self.new_gc()
         self.image_dpi = image_dpi
+        self.hatch_buffer_scale = (
+            (max(self.width, self.height)) if RendererPdf.hatchstyles_enabled else 1.0
+        )
 
     def finalize(self):
         self.file.output(*self.gc.finalize())
@@ -2020,6 +2048,7 @@ class RendererPdf(_backend_pdf_ps.RendererPDFPSBase):
 
     def draw_path(self, gc, path, transform, rgbFace=None):
         # docstring inherited
+        gc.set_hatch_buffer_scale(self.hatch_buffer_scale)
         self.check_gc(gc, rgbFace)
         self.file.writePath(
             path, transform,
@@ -2511,13 +2540,20 @@ class GraphicsContextPdf(GraphicsContextBase):
         name = self.file.alphaState(effective_alphas)
         return [name, Op.setgstate]
 
-    def hatch_cmd(self, hatch, hatch_color, hatch_linewidth):
-        if not hatch:
+    def hatch_cmd(self, hatch, hatch_color, hatch_linewidth, custom_hatch):
+        if not (hatch or len(custom_hatch)):
             if self._fillcolor is not None:
                 return self.fillcolor_cmd(self._fillcolor)
             else:
                 return [Name('DeviceRGB'), Op.setcolorspace_nonstroke]
         else:
+            if len(custom_hatch):
+                hatch_style = (hatch_color, self._fillcolor,
+                               custom_hatch, hatch_linewidth)
+                name = self.file.hatchPattern(hatch_style)
+                return [Name('Pattern'), Op.setcolorspace_nonstroke,
+                        name, Op.setcolor_nonstroke]
+
             hatch_style = (hatch_color, self._fillcolor, hatch, hatch_linewidth)
             name = self.file.hatchPattern(hatch_style)
             return [Name('Pattern'), Op.setcolorspace_nonstroke,
@@ -2583,7 +2619,7 @@ class GraphicsContextPdf(GraphicsContextBase):
         (('_dashes',), dash_cmd),
         (('_rgb',), rgb_cmd),
         # must come after fillcolor and rgb
-        (('_hatch', '_hatch_color', '_hatch_linewidth'), hatch_cmd),
+        (('_hatch', '_hatch_color', '_hatch_linewidth', '_hatchstyle'), hatch_cmd),
     )
 
     def delta(self, other):
