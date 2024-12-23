@@ -611,11 +611,15 @@ class Patch(artist.Artist):
             hatchstyle = []
         else:
             mpl.backends.backend_agg.RendererAgg.hatchstyles_enabled = True
-        self._hatchstyle = np.atleast_1d(hatchstyle)
+        if not isinstance(hatchstyle, list):
+            hatchstyle = [hatchstyle]
+        self._hatchstyle = hatchstyle
         self.stale = True
 
     def get_hatchstyle(self):
         """Return the hatchstyle(s)"""
+        if self._hatchstyle is None:
+            return []
         return self._hatchstyle
 
     def _draw_paths_with_artist_properties(
@@ -654,10 +658,9 @@ class Patch(artist.Artist):
             gc.set_hatch_color(self.get_hatchcolor())
             gc.set_hatch_linewidth(self._hatch_linewidth)
 
-        if self._hatchstyle.size > 0:
-            gc.set_hatchstyle(self._hatchstyle)
+        if len(self.get_hatchstyle()):
+            gc.set_hatchstyle(self.get_hatchstyle())
             gc.set_hatch_color(self._hatch_color)
-            gc.set_hatch_linewidth(self._hatch_linewidth)
 
         if self.get_sketch_params() is not None:
             gc.set_sketch_params(*self.get_sketch_params())

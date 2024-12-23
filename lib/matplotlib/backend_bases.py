@@ -695,6 +695,7 @@ class GraphicsContextBase:
         self._hatch = None
         self._hatch_color = None
         self._hatch_linewidth = rcParams['hatch.linewidth']
+        self._hatch_buffer_scale = 1.0
         self._hatchstyle = []
         self._url = None
         self._gid = None
@@ -940,6 +941,8 @@ class GraphicsContextBase:
         self._snap = snap
 
     def set_hatch_buffer_scale(self, scale):
+        for hatchstyle in self._hatchstyle:
+            hatchstyle['hatch_buffer_scale'] = scale
         self._hatch_buffer_scale = scale
 
     def set_hatch(self, hatch):
@@ -953,7 +956,10 @@ class GraphicsContextBase:
     def get_hatch_path(self, density=6.0):
         """Return a `.Path` for the current hatch or hatchstyle"""
         if len(self.get_hatchstyle()):
-            return Path.hatchstyle(self.get_hatchstyle(), self._hatch_buffer_scale)
+            hatchstyles = self.get_hatchstyle()
+            for hatchstyle in hatchstyles:
+                hatchstyle['hatch_buffer_scale'] = self._hatch_buffer_scale
+            return Path.hatchstyle(hatchstyles)
         hatch = self.get_hatch()
         if hatch is None:
             return None
@@ -977,10 +983,14 @@ class GraphicsContextBase:
 
     def get_hatchstyle(self):
         """Get the hatch style."""
+        if self._hatchstyle is None:
+            return []
         return self._hatchstyle
 
     def set_hatchstyle(self, hatchstyle):
         """Set the hatch style."""
+        for hs in hatchstyle:
+            hs['hatch_buffer_scale'] = self._hatch_buffer_scale
         self._hatchstyle = hatchstyle
 
     def get_sketch_params(self):

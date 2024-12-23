@@ -235,6 +235,7 @@ attrs = {
 class HatchStyle:
     def __init__(self, hatchpattern, **kwargs):
         self.hatchpattern = hatchpattern
+        self.hatch_buffer_scale = kwargs.get("hatch_buffer_scale", 1.0)
         self.kwargs = {
             attr: kwargs.get(attr, default) for attr, default in attrs.items()
         }
@@ -263,8 +264,7 @@ class HatchStyle:
         vertices += center
         return vertices
 
-    def get_vertices_and_codes(self, hatch_buffer_scale=1.0):
-        self.hatch_buffer_scale = hatch_buffer_scale
+    def get_vertices_and_codes(self):
         vertices, codes = np.empty((0, 2)), np.empty(0, Path.code_type)
 
         if self.hatchpattern in hatchpatterns:

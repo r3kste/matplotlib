@@ -1036,7 +1036,7 @@ class Path:
         return (get_path(hatchpattern, density)
                 if hatchpattern is not None else None)
 
-    def hatchstyle(hatchstyles, hatch_buffer_scale=1.0):
+    def hatchstyle(hatchstyles):
         vertices, codes = np.empty((0, 2)), np.empty(0, Path.code_type)
         for hatchstyle in hatchstyles:
             hatchpattern = hatchstyle.get("hatch", None)
@@ -1044,7 +1044,7 @@ class Path:
                 _api.warn_external("Hatch style must specify a hatch pattern.")
                 continue
             hatchstyle = mpl.hatch.HatchStyle(hatchpattern, **hatchstyle)
-            verts, cods = hatchstyle.get_vertices_and_codes(hatch_buffer_scale)
+            verts, cods = hatchstyle.get_vertices_and_codes()
             vertices = np.concatenate([vertices, verts])
             codes = np.concatenate([codes, cods])
         return Path(vertices, codes)
