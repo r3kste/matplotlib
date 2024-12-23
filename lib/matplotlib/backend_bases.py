@@ -149,6 +149,9 @@ class RendererBase:
     * `draw_path_collection`
     * `draw_quad_mesh`
     """
+
+    hatchstyles_enabled = False
+
     def __init__(self):
         super().__init__()
         self._texmanager = None

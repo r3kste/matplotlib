@@ -610,7 +610,7 @@ class Patch(artist.Artist):
         if hatchstyle is None:
             hatchstyle = []
         else:
-            mpl.backends.backend_agg.RendererAgg.hatchstyles_enabled = True
+            mpl.backend_bases.RendererBase.hatchstyles_enabled = True
         if not isinstance(hatchstyle, list):
             hatchstyle = [hatchstyle]
         self._hatchstyle = hatchstyle
