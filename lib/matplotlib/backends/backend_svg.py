@@ -293,6 +293,9 @@ class RendererSVG(RendererBase):
         self.height = height
         self.writer = XMLWriter(svgwriter)
         self.image_dpi = image_dpi  # actual dpi at which we rasterize stuff
+        self.hatch_buffer_scale = ((max(self.width, self.height) / 72.0)
+                                   if RendererSVG.hatchstyles_enabled
+                                   else 1.0)
 
         if basename is None:
             basename = getattr(svgwriter, "name", "")
@@ -495,13 +498,18 @@ class RendererSVG(RendererBase):
         """
         Create a new hatch pattern
         """
+        if len(gc.get_hatchstyle()):
+            hatch = gc.get_hatchstyle()
+            hatch = tuple(tuple(h.items()) for h in hatch)
+        else:
+            hatch = gc.get_hatch()
         if rgbFace is not None:
             rgbFace = tuple(rgbFace)
         edge = gc.get_hatch_color()
         if edge is not None:
             edge = tuple(edge)
         lw = gc.get_hatch_linewidth()
-        dictkey = (gc.get_hatch(), rgbFace, edge, lw)
+        dictkey = (hatch, rgbFace, edge, lw)
         oid = self._hatchd.get(dictkey)
         if oid is None:
             oid = self._make_id('h', dictkey)
@@ -513,7 +521,7 @@ class RendererSVG(RendererBase):
     def _write_hatches(self):
         if not len(self._hatchd):
             return
-        HATCH_SIZE = 72
+        HATCH_SIZE = 72 * self.hatch_buffer_scale
         writer = self.writer
         writer.start('defs')
         for (path, face, stroke, lw), oid in self._hatchd.values():
@@ -560,7 +568,7 @@ class RendererSVG(RendererBase):
 
         forced_alpha = gc.get_forced_alpha()
 
-        if gc.get_hatch() is not None:
+        if gc.get_hatch() is not None or len(gc.get_hatchstyle()):
             attrib['fill'] = f"url(#{self._get_hatch(gc, rgbFace)})"
             if (rgbFace is not None and len(rgbFace) == 4 and rgbFace[3] != 1.0
                     and not forced_alpha):
@@ -676,6 +684,7 @@ class RendererSVG(RendererBase):
 
     def draw_path(self, gc, path, transform, rgbFace=None):
         # docstring inherited
+        gc.set_hatch_buffer_scale(self.hatch_buffer_scale)
         trans_and_flip = self._make_flip_transform(transform)
         clip = (rgbFace is None and gc.get_hatch_path() is None)
         simplify = path.should_simplify and clip
