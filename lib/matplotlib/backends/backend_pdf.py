@@ -1569,7 +1569,6 @@ end"""
         sidelen = 72.0
         for hatch_style, name in self._hatch_patterns.items():
             stroke_rgb, fill_rgb, hatch, lw = hatch_style
-            filled = True
             if isinstance(hatch, tuple):
                 custom_hatch = [dict(h) for h in hatch]
                 hatch_buffer_scale = custom_hatch[0].get('hatch_buffer_scale', 1.0)
@@ -1578,7 +1577,6 @@ end"""
             else:
                 sidelen = 72.0
                 path = Path.hatch(hatch)
-                filled = filled and all(h not in '|-/\\+xX' for h in hatch)
 
             ob = self.reserveObject('hatch pattern')
             hatchDict[name] = ob
@@ -1601,6 +1599,8 @@ end"""
                             Op.setrgb_nonstroke,
                             0, 0, sidelen, sidelen, Op.rectangle,
                             Op.fill)
+            self.output(stroke_rgb[0], stroke_rgb[1], stroke_rgb[2],
+                        Op.setrgb_nonstroke)
 
             self.output(lw, Op.setlinewidth)
 
@@ -1608,9 +1608,6 @@ end"""
                 path,
                 Affine2D().scale(sidelen),
                 simplify=False))
-            if filled:
-                self.output(stroke_rgb[0], stroke_rgb[1], stroke_rgb[2],
-                            Op.setrgb_nonstroke)
             self.output(Op.fill_stroke)
 
             self.endStream()
