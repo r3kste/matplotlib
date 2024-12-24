@@ -1976,9 +1976,6 @@ class RendererPdf(_backend_pdf_ps.RendererPDFPSBase):
         self.file = file
         self.gc = self.new_gc()
         self.image_dpi = image_dpi
-        self.hatch_buffer_scale = (
-            (max(self.width, self.height)) if RendererPdf.hatchstyles_enabled else 1.0
-        )
 
     def finalize(self):
         self.file.output(*self.gc.finalize())

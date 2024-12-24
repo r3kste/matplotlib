@@ -506,7 +506,13 @@ class RendererPS(_backend_pdf_ps.RendererPDFPSBase):
                 self.fontsize = fontsize
 
     def create_hatch(self, hatch, linewidth):
-        sidelen = 72
+        sidelen = int(72 * self.hatch_buffer_scale)
+        if isinstance(hatch, list):
+            path = Path.hatchstyle(hatch)
+            hatch = tuple(tuple(h.items()) for h in hatch)
+        else:
+            path = Path.hatch(hatch)
+
         if hatch in self._hatches:
             return self._hatches[hatch]
         name = 'H%d' % len(self._hatches)
@@ -522,7 +528,7 @@ class RendererPS(_backend_pdf_ps.RendererPDFPSBase):
      /PaintProc {{
         pop
         {linewidth:g} setlinewidth
-{self._convert_path(Path.hatch(hatch), Affine2D().scale(sidelen), simplify=False)}
+{self._convert_path(path, Affine2D().scale(sidelen), simplify=False)}
         gsave
         fill
         grestore
@@ -612,6 +618,7 @@ grestore
     @_log_if_debug_on
     def draw_path(self, gc, path, transform, rgbFace=None):
         # docstring inherited
+        gc.set_hatch_buffer_scale(self.hatch_buffer_scale)
         clip = rgbFace is None and gc.get_hatch_path() is None
         simplify = path.should_simplify and clip
         ps = self._convert_path(path, transform, clip=clip, simplify=simplify)
@@ -907,7 +914,11 @@ grestore
             stroke = False
         if self._is_transparent(rgbFace):
             fill = False
-        hatch = gc.get_hatch()
+
+        if len(gc.get_hatchstyle()):
+            hatch = gc.get_hatchstyle()
+        else:
+            hatch = gc.get_hatch()
 
         if mightstroke:
             self.set_linewidth(gc.get_linewidth())

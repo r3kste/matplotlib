@@ -126,6 +126,9 @@ class RendererPDFPSBase(RendererBase):
         super().__init__()
         self.width = width
         self.height = height
+        self.hatch_buffer_scale = ((max(self.width, self.height))
+                                   if RendererPDFPSBase.hatchstyles_enabled
+                                   else 1.0)
 
     def flipy(self):
         # docstring inherited
