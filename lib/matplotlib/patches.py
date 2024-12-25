@@ -620,8 +620,6 @@ class Patch(artist.Artist):
 
     def get_hatchstyle(self):
         """Return the hatchstyle(s)"""
-        if self._hatchstyle is None:
-            return []
         return self._hatchstyle
 
     def _draw_paths_with_artist_properties(

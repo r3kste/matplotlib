@@ -294,8 +294,7 @@ class RendererSVG(RendererBase):
         self.writer = XMLWriter(svgwriter)
         self.image_dpi = image_dpi  # actual dpi at which we rasterize stuff
         self.hatch_buffer_scale = ((max(self.width, self.height) / 72.0)
-                                   if RendererSVG.hatchstyles_enabled
-                                   else 1.0)
+                                   if RendererSVG.hatchstyles_enabled else 1.0)
 
         if basename is None:
             basename = getattr(svgwriter, "name", "")
