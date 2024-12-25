@@ -93,6 +93,7 @@ class Collection(mcolorizer.ColorizingArtist):
                  hatch=None,
                  urls=None,
                  zorder=1,
+                 hatchstyle=None,
                  **kwargs
                  ):
         """
@@ -191,6 +192,7 @@ class Collection(mcolorizer.ColorizingArtist):
         self.set_urls(urls)
         self.set_hatch(hatch)
         self.set_zorder(zorder)
+        self.set_hatchstyle(hatchstyle)
 
         if capstyle:
             self.set_capstyle(capstyle)
@@ -368,7 +370,12 @@ class Collection(mcolorizer.ColorizingArtist):
         gc = renderer.new_gc()
         self._set_gc_clip(gc)
         gc.set_snap(self.get_snap())
+        gc.set_hatch_buffer_scale(renderer.hatch_buffer_scale)
 
+        if len(self.get_hatchstyle()):
+            gc.set_hatchstyle(self.get_hatchstyle())
+            gc.set_hatch_color(self._hatch_color)
+            gc.set_hatch_linewidth(self.get_hatch_linewidth())
         if self._hatch:
             gc.set_hatch(self._hatch)
             gc.set_hatch_color(self._hatch_color)
@@ -396,7 +403,8 @@ class Collection(mcolorizer.ColorizingArtist):
                 len(self._linewidths) == 1 and
                 all(ls[1] is None for ls in self._linestyles) and
                 len(self._antialiaseds) == 1 and len(self._urls) == 1 and
-                self.get_hatch() is None):
+                self.get_hatch() is None and
+                len(self.get_hatchstyle()) == 0):
             if len(trans):
                 combined_transform = transforms.Affine2D(trans[0]) + transform
             else:
@@ -581,6 +589,22 @@ class Collection(mcolorizer.ColorizingArtist):
         """Return the offsets for the collection."""
         # Default to zeros in the no-offset (None) case
         return np.zeros((1, 2)) if self._offsets is None else self._offsets
+
+    def set_hatchstyle(self, hatchstyle):
+        """Set the hatchstyle(s) for the collection."""
+        if hatchstyle is None:
+            hatchstyle = []
+        else:
+            mpl.backend_bases.RendererBase.hatchstyles_enabled = True
+        if not isinstance(hatchstyle, list):
+            hatchstyle = [hatchstyle]
+
+        self._hatchstyle = hatchstyle
+        self.stale = True
+
+    def get_hatchstyle(self):
+        """Return the hatchstyle(s) for the collection."""
+        return self._hatchstyle
 
     def _get_default_linewidth(self):
         # This may be overridden in a subclass.
