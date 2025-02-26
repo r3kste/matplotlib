@@ -986,8 +986,6 @@ class GraphicsContextBase:
 
     def get_hatchstyle(self):
         """Get the hatch style."""
-        if self._hatchstyle is None:
-            return []
         return self._hatchstyle
 
     def set_hatchstyle(self, hatchstyle):

@@ -618,8 +618,6 @@ class Patch(artist.Artist):
 
     def get_hatchstyle(self):
         """Return the hatchstyle(s)"""
-        if self._hatchstyle is None:
-            return []
         return self._hatchstyle
 
     def _draw_paths_with_artist_properties(
@@ -660,7 +658,7 @@ class Patch(artist.Artist):
 
         if len(self.get_hatchstyle()):
             gc.set_hatchstyle(self.get_hatchstyle())
-            gc.set_hatch_color(self._hatch_color)
+            gc.set_hatch_color(self.get_hatchcolor())
 
         if self.get_sketch_params() is not None:
             gc.set_sketch_params(*self.get_sketch_params())
