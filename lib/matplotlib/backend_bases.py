@@ -208,7 +208,7 @@ class RendererBase:
     def draw_path_collection(self, gc, master_transform, paths, all_transforms,
                              offsets, offset_trans, facecolors, edgecolors,
                              linewidths, linestyles, antialiaseds, urls,
-                             offset_position, *, hatchcolors=None):
+                             offset_position, hatches=None, hatchcolors=None):
         """
         Draw a collection of *paths*.
 
@@ -238,13 +238,15 @@ class RendererBase:
         path_ids = self._iter_collection_raw_paths(master_transform,
                                                    paths, all_transforms)
 
+        if hatches is None:
+            hatches = []
         if hatchcolors is None:
             hatchcolors = []
 
         for xo, yo, path_id, gc0, rgbFace in self._iter_collection(
                 gc, list(path_ids), offsets, offset_trans,
                 facecolors, edgecolors, linewidths, linestyles,
-                antialiaseds, urls, offset_position, hatchcolors=hatchcolors):
+                antialiaseds, urls, offset_position, hatches, hatchcolors):
             path, transform = path_id
             # Only apply another translation if we have an offset, else we
             # reuse the initial transform.
@@ -343,7 +345,7 @@ class RendererBase:
 
     def _iter_collection(self, gc, path_ids, offsets, offset_trans, facecolors,
                          edgecolors, linewidths, linestyles,
-                         antialiaseds, urls, offset_position, *, hatchcolors):
+                         antialiaseds, urls, offset_position, hatches, hatchcolors):
         """
         Helper method (along with `_iter_collection_raw_paths`) to implement
         `draw_path_collection` in a memory-efficient manner.
@@ -374,6 +376,7 @@ class RendererBase:
         Nhatchcolors = len(hatchcolors)
         Nlinewidths = len(linewidths)
         Nlinestyles = len(linestyles)
+        Nhatches = len(hatches)
         Nurls = len(urls)
 
         if (Nfacecolors == 0 and Nedgecolors == 0 and Nhatchcolors == 0) or Npaths == 0:
@@ -395,13 +398,14 @@ class RendererBase:
         lws = cycle_or_default(linewidths)
         lss = cycle_or_default(linestyles)
         aas = cycle_or_default(antialiaseds)
+        hchs = cycle_or_default(hatches)
         urls = cycle_or_default(urls)
 
         if Nedgecolors == 0:
             gc0.set_linewidth(0.0)
 
-        for pathid, (xo, yo), fc, ec, hc, lw, ls, aa, url in itertools.islice(
-                zip(pathids, toffsets, fcs, ecs, hcs, lws, lss, aas, urls), N):
+        for pathid, (xo, yo), fc, ec, hc, lw, ls, aa, hch, url in itertools.islice(
+                zip(pathids, toffsets, fcs, ecs, hcs, lws, lss, aas, hchs, urls), N):
             if not (np.isfinite(xo) and np.isfinite(yo)):
                 continue
             if Nedgecolors:
@@ -418,6 +422,8 @@ class RendererBase:
             if fc is not None and len(fc) == 4 and fc[3] == 0:
                 fc = None
             gc0.set_antialiased(aa)
+            if Nhatches:
+                gc0.set_hatch(hch)
             if Nurls:
                 gc0.set_url(url)
             yield xo, yo, pathid, gc0, fc

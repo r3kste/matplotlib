@@ -736,7 +736,9 @@ class RendererSVG(RendererBase):
     def draw_path_collection(self, gc, master_transform, paths, all_transforms,
                              offsets, offset_trans, facecolors, edgecolors,
                              linewidths, linestyles, antialiaseds, urls,
-                             offset_position, *, hatchcolors=None):
+                             offset_position, hatches=None, hatchcolors=None):
+        if hatches is None:
+            hatches = []
         if hatchcolors is None:
             hatchcolors = []
         # Is the optimization worth it? Rough calculation:
@@ -754,7 +756,7 @@ class RendererSVG(RendererBase):
                 gc, master_transform, paths, all_transforms,
                 offsets, offset_trans, facecolors, edgecolors,
                 linewidths, linestyles, antialiaseds, urls,
-                offset_position, hatchcolors=hatchcolors)
+                offset_position, hatches, hatchcolors)
 
         writer = self.writer
         path_codes = []
@@ -772,7 +774,7 @@ class RendererSVG(RendererBase):
         for xo, yo, path_id, gc0, rgbFace in self._iter_collection(
                 gc, path_codes, offsets, offset_trans,
                 facecolors, edgecolors, linewidths, linestyles,
-                antialiaseds, urls, offset_position, hatchcolors=hatchcolors):
+                antialiaseds, urls, offset_position, hatches, hatchcolors):
             url = gc0.get_url()
             if url is not None:
                 writer.start('a', attrib={'xlink:href': url})

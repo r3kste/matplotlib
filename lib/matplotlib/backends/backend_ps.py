@@ -674,7 +674,9 @@ grestore
     def draw_path_collection(self, gc, master_transform, paths, all_transforms,
                              offsets, offset_trans, facecolors, edgecolors,
                              linewidths, linestyles, antialiaseds, urls,
-                             offset_position, *, hatchcolors=None):
+                             offset_position, hatches=None, hatchcolors=None):
+        if hatches is None:
+            hatches = []
         if hatchcolors is None:
             hatchcolors = []
         # Is the optimization worth it? Rough calculation:
@@ -692,7 +694,7 @@ grestore
                 self, gc, master_transform, paths, all_transforms,
                 offsets, offset_trans, facecolors, edgecolors,
                 linewidths, linestyles, antialiaseds, urls,
-                offset_position, hatchcolors=hatchcolors)
+                offset_position, hatches, hatchcolors)
 
         path_codes = []
         for i, (path, transform) in enumerate(self._iter_collection_raw_paths(
@@ -711,7 +713,7 @@ translate
         for xo, yo, path_id, gc0, rgbFace in self._iter_collection(
                 gc, path_codes, offsets, offset_trans,
                 facecolors, edgecolors, linewidths, linestyles,
-                antialiaseds, urls, offset_position, hatchcolors=hatchcolors):
+                antialiaseds, urls, offset_position, hatches, hatchcolors):
             ps = f"{xo:g} {yo:g} {path_id}"
             self._draw_ps(ps, gc0, rgbFace)
 

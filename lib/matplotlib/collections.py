@@ -368,8 +368,7 @@ class Collection(mcolorizer.ColorizingArtist):
         self._set_gc_clip(gc)
         gc.set_snap(self.get_snap())
 
-        if self._hatch:
-            gc.set_hatch(self._hatch)
+        if self._hatch.any():
             gc.set_hatch_linewidth(self._hatch_linewidth)
 
         if self.get_sketch_params() is not None:
@@ -394,7 +393,7 @@ class Collection(mcolorizer.ColorizingArtist):
                 len(self._linewidths) == 1 and
                 all(ls[1] is None for ls in self._linestyles) and
                 len(self._antialiaseds) == 1 and len(self._urls) == 1 and
-                self.get_hatch() is None):
+                all(h is None for h in self.get_hatch())):
             if len(trans):
                 combined_transform = transforms.Affine2D(trans[0]) + transform
             else:
@@ -423,11 +422,11 @@ class Collection(mcolorizer.ColorizingArtist):
             # The current new API of draw_path_collection() is provisional
             # and will be changed in a future PR.
 
-            # Find whether renderer.draw_path_collection() takes hatchcolor parameter.
-            # Since third-party implementations of draw_path_collection() may not be
-            # introspectable, e.g. with inspect.signature, the only way is to try and
-            # call this with the hatchcolors parameter.
-            hatchcolors_arg_supported = True
+            # Find whether renderer.draw_path_collection() takes hatches and hatchcolors
+            # parameter. Since third-party implementations of draw_path_collection()
+            # may not be introspectable, e.g. with inspect.signature, the only way is
+            # to try and call this with the hatchcolors parameter.
+            hatches_supported = True
             try:
                 renderer.draw_path_collection(
                     gc, transform.frozen(), [],
@@ -435,18 +434,18 @@ class Collection(mcolorizer.ColorizingArtist):
                     self.get_facecolor(), self.get_edgecolor(),
                     self._linewidths, self._linestyles,
                     self._antialiaseds, self._urls,
-                    "screen", hatchcolors=self.get_hatchcolor()
+                    "screen", self.get_hatch(), self.get_hatchcolor()
                 )
             except TypeError:
-                # If the renderer does not support the hatchcolors argument,
+                # If the renderer does not support hatches or hatchcolors arg,
                 # it will raise a TypeError. In this case, we will
                 # iterate over all paths and draw them one by one.
-                hatchcolors_arg_supported = False
+                hatches_supported = False
 
-            # If the hatchcolors argument is not needed or not passed
+            # If the hatches or hatchcolors argument are not needed or not passed
             # then we can skip the iteration over paths in case the
             # argument is not supported by the renderer.
-            hatchcolors_not_needed = (self.get_hatch() is None or
+            hatches_not_needed = (all(h is None for h in self.get_hatch()) or
                                       self._original_hatchcolor is None)
 
             if self._gapcolor is not None:
@@ -456,12 +455,13 @@ class Collection(mcolorizer.ColorizingArtist):
                         self._linewidths, ilinestyles, self._antialiaseds, self._urls,
                         "screen"]
 
-                if hatchcolors_arg_supported:
+                if hatches_supported:
                     renderer.draw_path_collection(gc, transform.frozen(), ipaths,
                                                   self.get_transforms(), *args,
-                                                  hatchcolors=self.get_hatchcolor())
+                                                  self.get_hatch(),
+                                                  self.get_hatchcolor())
                 else:
-                    if hatchcolors_not_needed:
+                    if hatches_not_needed:
                         renderer.draw_path_collection(gc, transform.frozen(), ipaths,
                                                       self.get_transforms(), *args)
                     else:
@@ -469,7 +469,7 @@ class Collection(mcolorizer.ColorizingArtist):
                             transform.frozen(), ipaths, self.get_transforms())
                         for xo, yo, path_id, gc0, rgbFace in renderer._iter_collection(
                             gc, list(path_ids), *args,
-                            hatchcolors=self.get_hatchcolor(),
+                            self.get_hatch(), self.get_hatchcolor(),
                         ):
                             path, transform = path_id
                             if xo != 0 or yo != 0:
@@ -481,19 +481,20 @@ class Collection(mcolorizer.ColorizingArtist):
                     self._linewidths, self._linestyles, self._antialiaseds, self._urls,
                     "screen"]
 
-            if hatchcolors_arg_supported:
+            if hatches_supported:
                 renderer.draw_path_collection(gc, transform.frozen(), paths,
                                               self.get_transforms(), *args,
-                                              hatchcolors=self.get_hatchcolor())
+                                              self.get_hatch(), self.get_hatchcolor())
             else:
-                if hatchcolors_not_needed:
+                if hatches_not_needed:
                     renderer.draw_path_collection(gc, transform.frozen(), paths,
                                                   self.get_transforms(), *args)
                 else:
                     path_ids = renderer._iter_collection_raw_paths(
                         transform.frozen(), paths, self.get_transforms())
                     for xo, yo, path_id, gc0, rgbFace in renderer._iter_collection(
-                        gc, list(path_ids), *args, hatchcolors=self.get_hatchcolor(),
+                        gc, list(path_ids), *args, self.get_hatch(),
+                        self.get_hatchcolor(),
                     ):
                         path, transform = path_id
                         if xo != 0 or yo != 0:
@@ -603,7 +604,9 @@ class Collection(mcolorizer.ColorizingArtist):
         hatch : {'/', '\\', '|', '-', '+', 'x', 'o', 'O', '.', '*'}
         """
         # Use validate_hatch(list) after deprecation.
-        mhatch._validate_hatch_pattern(hatch)
+        hatch = np.atleast_1d(hatch)
+        for h in hatch:
+            mhatch._validate_hatch_pattern(h)
         self._hatch = hatch
         self.stale = True
 
@@ -2215,9 +2218,11 @@ class PatchCollection(Collection):
 
             kwargs['facecolors'] = [determine_facecolor(p) for p in patches]
             kwargs['edgecolors'] = [p.get_edgecolor() for p in patches]
+            kwargs['hatchcolors'] = [p.get_hatch_color() for p in patches]
             kwargs['linewidths'] = [p.get_linewidth() for p in patches]
             kwargs['linestyles'] = [p.get_linestyle() for p in patches]
             kwargs['antialiaseds'] = [p.get_antialiased() for p in patches]
+            kwargs['hatch'] = [p.get_hatch() for p in patches]
 
         super().__init__(**kwargs)
 
