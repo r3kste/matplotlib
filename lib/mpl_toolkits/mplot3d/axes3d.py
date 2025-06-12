@@ -4077,6 +4077,11 @@ class Axes3D(Axes):
         """
         if starts is None:
             starts = np.zeros_like(ends)
+            
+        if not isinstance(starts, np.ndarray):
+            raise TypeError("`starts` must be a NumPy array")
+        if not isinstance(ends, np.ndarray):
+            raise TypeError("`ends` must be a NumPy array")
 
         assert starts.shape == ends.shape, "`starts` and `ends` shape must match"
         assert len(ends.shape) == 2 and ends.shape[1] == 3, \
