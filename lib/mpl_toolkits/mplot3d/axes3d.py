@@ -4083,9 +4083,9 @@ class Axes3D(Axes):
         if not isinstance(ends, np.ndarray):
             raise TypeError("`ends` must be a NumPy array")
 
-        # assert starts.shape == ends.shape, "`starts` and `ends` shape must match"
-        # assert len(ends.shape) == 2 and ends.shape[1] == 3, \
-        #     "`starts` and `ends` must be shape (N, 3)"
+        assert starts.shape == ends.shape, "`starts` and `ends` shape must match"
+        assert len(ends.shape) == 2 and ends.shape[1] == 3, \
+            "`starts` and `ends` must be shape (N, 3)"
 
         # create new axes if none given
         if ax is None:
