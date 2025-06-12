@@ -4064,46 +4064,46 @@ class Axes3D(Axes):
     stem3D = stem
 
 
-def arrows3d(ends, starts=None, ax=None, label=None, **kwargs):
-    """3D plot of multiple arrows
+    def arrows3d(ends, starts=None, ax=None, label=None, **kwargs):
+        """3D plot of multiple arrows
 
-    Args:
-        ends (ndarray): (N, 3) size array of arrow end coordinates
-        starts (ndarray): (N, 3) size array of arrow start coordinates.
-            Assume start position of (0, 0, 0) if not given
-        ax (Axes3DSubplot): existing axes to add to
-        label (str): legend label to apply to this group of arrows
-        kwargs (dict): additional arrow properties
-    """
-    if starts is None:
-        starts = np.zeros_like(ends)
+        Args:
+            ends (ndarray): (N, 3) size array of arrow end coordinates
+            starts (ndarray): (N, 3) size array of arrow start coordinates.
+                Assume start position of (0, 0, 0) if not given
+            ax (Axes3DSubplot): existing axes to add to
+            label (str): legend label to apply to this group of arrows
+            kwargs (dict): additional arrow properties
+        """
+        if starts is None:
+            starts = np.zeros_like(ends)
 
-    assert starts.shape == ends.shape, "`starts` and `ends` shape must match"
-    assert len(ends.shape) == 2 and ends.shape[1] == 3, \
-        "`starts` and `ends` must be shape (N, 3)"
+        assert starts.shape == ends.shape, "`starts` and `ends` shape must match"
+        assert len(ends.shape) == 2 and ends.shape[1] == 3, \
+            "`starts` and `ends` must be shape (N, 3)"
 
-    # create new axes if none given
-    if ax is None:
-        ax = plt.figure().add_subplot(111, projection='3d')
+        # create new axes if none given
+        if ax is None:
+            ax = plt.figure().add_subplot(111, projection='3d')
 
-    arrow_prop_dict = dict(mutation_scale=20, arrowstyle='-|>', color='k', shrinkA=0, shrinkB=0)
-    arrow_prop_dict.update(kwargs)
-    for ind, (s, e) in enumerate(np.stack((starts, ends), axis=1)):
-        a = Arrow3D(
-            [s[0], e[0]], [s[1], e[1]], [s[2], e[2]],
-            # only give label to first arrow
-            label=label if ind == 0 else None,
-            **arrow_prop_dict
-        )
-        ax.add_artist(a)
+        arrow_prop_dict = dict(mutation_scale=20, arrowstyle='-|>', color='k', shrinkA=0, shrinkB=0)
+        arrow_prop_dict.update(kwargs)
+        for ind, (s, e) in enumerate(np.stack((starts, ends), axis=1)):
+            a = Arrow3D(
+                [s[0], e[0]], [s[1], e[1]], [s[2], e[2]],
+                # only give label to first arrow
+                label=label if ind == 0 else None,
+                **arrow_prop_dict
+            )
+            ax.add_artist(a)
 
-    # store starts/ends on the axes for setting the limits
-    ax.points = np.vstack((starts, ends, getattr(ax, 'points', np.empty((0, 3)))))
-    ax.set_xlim3d(ax.points[:, 0].min(),ax.points[:, 0].max())
-    ax.set_ylim3d(ax.points[:, 1].min(),ax.points[:, 1].max())
-    ax.set_zlim3d(ax.points[:, 2].min(),ax.points[:, 2].max())
+        # store starts/ends on the axes for setting the limits
+        ax.points = np.vstack((starts, ends, getattr(ax, 'points', np.empty((0, 3)))))
+        ax.set_xlim3d(ax.points[:, 0].min(),ax.points[:, 0].max())
+        ax.set_ylim3d(ax.points[:, 1].min(),ax.points[:, 1].max())
+        ax.set_zlim3d(ax.points[:, 2].min(),ax.points[:, 2].max())
 
-    return ax
+        return ax
 
 
 def get_test_data(delta=0.05):
