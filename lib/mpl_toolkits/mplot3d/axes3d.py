@@ -28,6 +28,7 @@ import matplotlib.lines as mlines
 import matplotlib.patches as mpatches
 import matplotlib.container as mcontainer
 import matplotlib.transforms as mtransforms
+import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.axes._base import _axis_method_wrapper, _process_plot_format
 from matplotlib.transforms import Bbox
@@ -4063,6 +4064,48 @@ class Axes3D(Axes):
     stem3D = stem
 
 
+def arrows3d(ends, starts=None, ax=None, label=None, **kwargs):
+    """3D plot of multiple arrows
+
+    Args:
+        ends (ndarray): (N, 3) size array of arrow end coordinates
+        starts (ndarray): (N, 3) size array of arrow start coordinates.
+            Assume start position of (0, 0, 0) if not given
+        ax (Axes3DSubplot): existing axes to add to
+        label (str): legend label to apply to this group of arrows
+        kwargs (dict): additional arrow properties
+    """
+    if starts is None:
+        starts = np.zeros_like(ends)
+
+    assert starts.shape == ends.shape, "`starts` and `ends` shape must match"
+    assert len(ends.shape) == 2 and ends.shape[1] == 3, \
+        "`starts` and `ends` must be shape (N, 3)"
+
+    # create new axes if none given
+    if ax is None:
+        ax = plt.figure().add_subplot(111, projection='3d')
+
+    arrow_prop_dict = dict(mutation_scale=20, arrowstyle='-|>', color='k', shrinkA=0, shrinkB=0)
+    arrow_prop_dict.update(kwargs)
+    for ind, (s, e) in enumerate(np.stack((starts, ends), axis=1)):
+        a = Arrow3D(
+            [s[0], e[0]], [s[1], e[1]], [s[2], e[2]],
+            # only give label to first arrow
+            label=label if ind == 0 else None,
+            **arrow_prop_dict
+        )
+        ax.add_artist(a)
+
+    # store starts/ends on the axes for setting the limits
+    ax.points = np.vstack((starts, ends, getattr(ax, 'points', np.empty((0, 3)))))
+    ax.set_xlim3d(ax.points[:, 0].min(),ax.points[:, 0].max())
+    ax.set_ylim3d(ax.points[:, 1].min(),ax.points[:, 1].max())
+    ax.set_zlim3d(ax.points[:, 2].min(),ax.points[:, 2].max())
+
+    return ax
+
+
 def get_test_data(delta=0.05):
     """Return a tuple X, Y, Z with a test data set."""
     x = y = np.arange(-3.0, 3.0, delta)
@@ -4198,3 +4241,16 @@ class _Quaternion:
         elev = np.arcsin(np.clip(2*(qw*qy+qz*qx)/(qw*qw+qx*qx+qy*qy+qz*qz), -1, 1))
         roll = np.arctan2(2*(qw*qx-qy*qz), qw*qw-qx*qx-qy*qy+qz*qz)
         return elev, azim, roll
+
+
+class Arrow3D(mpatches.FancyArrowPatch):
+    def __init__(self, xs, ys, zs, *args, **kwargs):
+        super().__init__((0,0), (0,0), *args, **kwargs)
+        self._verts3d = xs, ys, zs
+
+    def do_3d_projection(self, renderer=None):
+        xs3d, ys3d, zs3d = self._verts3d
+        xs, ys, zs = proj3d.proj_transform(xs3d, ys3d, zs3d, self.axes.M)
+        self.set_positions((xs[0],ys[0]),(xs[1],ys[1]))
+
+        return np.min(zs)
