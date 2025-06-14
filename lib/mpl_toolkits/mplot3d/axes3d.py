@@ -33,6 +33,7 @@ from matplotlib.axes import Axes
 from matplotlib.axes._base import _axis_method_wrapper, _process_plot_format
 from matplotlib.transforms import Bbox
 from matplotlib.tri._triangulation import Triangulation
+from mpl_toolkits.mplot3d.art3d import Line3D, Poly3DCollection, patch_2d_to_3d, _paths_to_3d_segments, Line3DCollection
 
 from . import art3d
 from . import proj3d
@@ -4064,55 +4065,108 @@ class Axes3D(Axes):
     stem3D = stem
 
     def arrows3d(self, ends, starts=None, label=None, colors=None, **kwargs):
-        """3D plot of multiple arrows
-
-        Args:
-            ends (ndarray): (N, 3) size array of arrow end coordinates
-            starts (ndarray): (N, 3) size array of arrow start coordinates.
-                Assume start position of (0, 0, 0) if not given
-            label (str): legend label to apply to this group of arrows
-            colors (str or list of str): color(s) to use for the arrows.
-            kwargs (dict): additional arrow properties
         """
+        3D plot of multiple arrows
+
+        Parameters
+        ----------
+        ends : array-like
+            (N, 3) size array of arrow end coordinates.
+            
+        starts : array-like, default: (0,0,0) for each arrow
+            (N, 3) size array of arrow start coordinates.
+            
+        label : str, default: None
+            legend label to apply to this group of arrows.
+            
+        colors : str or list of str, default: none
+            color(s) to use for the arrows.
+            
+        Returns
+        -------
+        list of `~mpl_toolkits.mplot3d.art3d.Arrow3D`
+            The list of created arrows.
+            
+        Examples
+        --------
+        .. plot:: gallery/mplot3d/arrows3d_demo.py
+        """
+        ends = np.asarray(ends, dtype=float)
+        if ends.ndim != 2 or ends.shape[1] != 3:
+            raise ValueError("ends must be an (N, 3) array-like")
+        
         if starts is None:
-            starts = np.zeros_like(ends)
+            starts = np.zeros_like(ends, dtype=float)
+        else:
+            starts = np.asarray(starts, dtype=float)
 
         # `starts` and `ends` shape must match
-        assert starts.shape == ends.shape
-
-        # `starts` and `ends` must be shape (N, 3)
-        assert len(ends.shape) == 2 and ends.shape[1] == 3
+        if starts.shape != ends.shape:
+            raise ValueError("starts and ends must have the same shape")
+        
+        n_arrows = ends.shape[0]
+        if n_arrows == 0:
+            raise ValueError("No arrows to plot; ends must not be empty")
 
         if colors is None:
-            colors = ["k"]
-        if isinstance(colors, str):
-            colors = [colors]
-        colors = itertools.cycle(colors)
+            colors_iter = itertools.cycle(["k"])
+        elif isinstance(colors, str):
+            colors_iter = itertools.cycle([colors])
+        else:
+            colors_iter = itertools.cycle(colors)
 
         arrow_prop_dict = dict(
             mutation_scale=20, arrowstyle="-|>", shrinkA=0, shrinkB=0
         )
         arrow_prop_dict.update(kwargs)
+        
+        fancy_arrows_to_collect = []
+        collection_kwargs = {}
+        for prop in ['edgecolor', 'facecolor', 'linewidth', 'alpha', 'zorder', 'visible', 'rasterized', 'antialised']:
+            if prop in arrow_prop_dict:
+                collection_kwargs[prop] = kwargs.pop(prop)
+                
+        if 'color' in kwargs:
+            collection_kwargs['facecolor'] = kwargs['color']
+            collection_kwargs['edgecolor'] = kwargs['color']
+            kwargs.pop('color')
+            
+        individual_arrow_kwargs = kwargs
+        
         for ind, (s, e) in enumerate(np.stack((starts, ends), axis=1)):
             a = Arrow3D(
                 [s[0], e[0]],
                 [s[1], e[1]],
                 [s[2], e[2]],
                 label=label if ind == 0 else None,
-                color=next(colors),
+                color=next(colors_iter),
                 **arrow_prop_dict,
             )
-            self.add_artist(a)
+            fancy_arrows_to_collect.append(a)
+            
+        arrow_collection = art3d.Patch3DCollection(fancy_arrows_to_collect, **collection_kwargs)
+            
+        self.add_collection(arrow_collection)
 
         # store starts/ends on the axes for setting the limits
         self.points = np.vstack(
             (starts, ends, getattr(self, "points", np.empty((0, 3))))
         )
-        self.set_xlim3d(self.points[:, 0].min(),self.points[:, 0].max())
-        self.set_ylim3d(self.points[:, 1].min(),self.points[:, 1].max())
-        self.set_zlim3d(self.points[:, 2].min(),self.points[:, 2].max())
+        # only set limits if there are points to define them
+        if self.points.shape[0] > 0:
+            for i, setter in enumerate(
+                (self.set_xlim3d, self.set_ylim3d, self.set_zlim3d)
+            ):
+                min_val = self.points[:, i].min()
+                max_val = self.points[:, i].max()
+                # if min and max are identical (singular), expand the limits slightly
+                # otherwise, set them normally
+                if min_val == max_val:
+                    setter(min_val-0.5, max_val+0.5)
+                else:
+                    setter(min_val, max_val)
 
-        return self
+        return [arrow_collection]
 
 
 def get_test_data(delta=0.05):
@@ -4259,6 +4313,8 @@ class Arrow3D(mpatches.FancyArrowPatch):
 
     def do_3d_projection(self, renderer=None):
         xs3d, ys3d, zs3d = self._verts3d
+        if self.axes is None:
+            return np.min(zs3d)
         xs, ys, zs = proj3d.proj_transform(xs3d, ys3d, zs3d, self.axes.M)
         self.set_positions((xs[0],ys[0]),(xs[1],ys[1]))
 

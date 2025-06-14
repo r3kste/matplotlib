@@ -1,4 +1,5 @@
 import functools
+import inspect
 import itertools
 import platform
 import sys
@@ -6,6 +7,7 @@ import sys
 import pytest
 
 from mpl_toolkits.mplot3d import Axes3D, axes3d, proj3d, art3d
+from mpl_toolkits.mplot3d.axes3d import Arrow3D
 from mpl_toolkits.mplot3d.axes3d import _Quaternion as Quaternion
 import matplotlib as mpl
 from matplotlib.backend_bases import (MouseButton, MouseEvent,
@@ -21,6 +23,8 @@ from matplotlib.text import Text
 
 import matplotlib.pyplot as plt
 import numpy as np
+
+from lib.mpl_toolkits.mplot3d.art3d import Patch3DCollection
 
 
 mpl3d_image_comparison = functools.partial(
@@ -1762,6 +1766,207 @@ def test_stem3d():
         markerline.set(markerfacecolor='none', markeredgewidth=2)
         baseline.set_linewidth(3)
 
+
+class TestArrows3D:
+    def test_arrows3d_signature(self):
+        """Verify that arrows3d has the expected signature and parameters."""
+        ax = plt.figure().add_subplot(111, projection='3d')
+        assert hasattr(ax, 'arrows3d')
+        
+        sig = inspect.signature(ax.arrows3d)
+        assert 'ends' in sig.parameters
+        assert sig.parameters['ends'].kind == inspect.Parameter.POSITIONAL_OR_KEYWORD # Could be positional
+        
+        assert 'starts' in sig.parameters
+        assert sig.parameters['starts'].default is None # Default to None
+        
+        assert 'label' in sig.parameters
+        assert sig.parameters['label'].default is None
+
+        assert 'colors' in sig.parameters
+        assert sig.parameters['colors'].default is None # Or whatever default you expect
+
+        assert 'kwargs' in sig.parameters and sig.parameters['kwargs'].kind == inspect.Parameter.VAR_KEYWORD
+
+    def test_arrows3d_basic_call_origin(self):
+        """Test basic call with ends only, defaulting to origin for starts."""
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        ends = np.array([[1, 1, 1], [2, 2, 2]])
+        
+        collections = ax.arrows3d(ends)
+        
+        assert len(collections) == 1
+        arrow_collection = collections[0]
+        assert isinstance(arrow_collection, Patch3DCollection)
+        
+        assert arrow_collection in ax.collections
+        
+        assert len(arrow_collection.get_children()) == ends.shape[0]
+        
+        for patch in arrow_collection.get_children():
+            assert isinstance(patch, Arrow3D)
+        
+        plt.close(fig)  # Close the figure to avoid memory leaks
+        
+    def test_arrows3d_custom_starts(self):
+        """Test call with explicit starts and ends."""
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        starts = np.array([[0, 0, 0], [1, 1, 1]])
+        ends = np.array([[1, 1, 1], [2, 2, 2]])
+        collections = ax.arrows3d(ends, starts=starts)
+        
+        assert len(collections) == 1
+        arrow_collection = collections[0]
+        assert isinstance(arrow_collection, Patch3DCollection)
+        assert arrow_collection in ax.collections
+        assert len(arrow_collection.get_children()) == ends.shape[0]
+        for patch in arrow_collection.get_children():
+            assert isinstance(patch, Arrow3D)
+        
+        plt.close(fig)  # Close the figure to avoid memory leaks
+
+    def test_arrows3d_single_arrow(self):
+        """Test plotting a single arrow."""
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        ends = np.array([[1, 0, 0]])
+        collections = ax.arrows3d(ends)
+        
+        assert len(collections) == 1
+        arrow_collection = collections[0]
+        assert isinstance(arrow_collection, Patch3DCollection)
+        assert arrow_collection in ax.collections
+        assert len(arrow_collection.get_children()) == ends.shape[0]
+        assert isinstance(arrow_collection.get_children()[0], Arrow3D)
+        
+        plt.close(fig)  # Close the figure to avoid memory leaks
+
+    def test_arrows3d_multiple_arrows(self):
+        """Test plotting multiple arrows."""
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        ends = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+        collections = ax.arrows3d(ends)
+        
+        assert len(collections) == 1
+        arrow_collection = collections[0]
+        assert isinstance(arrow_collection, Patch3DCollection)
+        assert arrow_collection in ax.collections
+        assert len(arrow_collection.get_children()) == ends.shape[0]
+        for patch in arrow_collection.get_children():
+            assert isinstance(patch, Arrow3D)
+            
+        plt.close(fig)  # Close the figure to avoid memory leaks
+
+    def test_arrows3d_colors_single(self):
+        """Test color application with a single color string."""
+        ax = plt.figure().add_subplot(111, projection='3d')
+        ends = np.array([[1, 0, 0]])
+        arrows = ax.arrows3d(ends, colors='red')
+        assert len(arrows) == 1
+        assert arrows[0].get_edgecolor() == mcolors.to_rgba('red')
+
+    def test_arrows3d_colors_list(self):
+        """Test color application with a list of colors."""
+        ax = plt.figure().add_subplot(111, projection='3d')
+        ends = np.array([[1, 0, 0], [0, 1, 0]])
+        arrows = ax.arrows3d(ends, colors=['red', 'blue'])
+        assert arrows[0].get_edgecolor() == mcolors.to_rgba('red')
+        assert arrows[1].get_edgecolor() == mcolors.to_rgba('blue')
+
+    def test_arrows3d_label(self):
+        """Test label application."""
+        ax = plt.figure().add_subplot(111, projection='3d')
+        ends = np.array([[1, 0, 0]])
+        arrows = ax.arrows3d(ends, label='MyArrow')
+        assert arrows[0].get_label() == 'MyArrow'
+
+    def test_arrows3d_kwargs_passthrough(self):
+        """Test that kwargs like linewidth are passed through."""
+        ax = plt.figure().add_subplot(111, projection='3d')
+        ends = np.array([[1, 0, 0]])
+        arrows = ax.arrows3d(ends, linewidth=5, linestyle='--')
+        assert arrows[0].get_linewidth() == 5
+        assert arrows[0].get_linestyle() == '--'
+
+    def test_arrows3d_empty_ends_raises_error(self):
+        """Test that calling with empty ends raises an error."""
+        ax = plt.figure().add_subplot(111, projection='3d')
+        # Assuming your implementation will raise ValueError or similar for empty array
+        with pytest.raises(ValueError):
+            ax.arrows3d(np.array([]).reshape(0, 3)) # Ensure it's (0,3) shape
+
+    def test_arrows3d_invalid_ends_shape_raises_error(self):
+        """Test that calling with incorrectly shaped ends raises an error."""
+        ax = plt.figure().add_subplot(111, projection='3d')
+        # Test 1D array
+        with pytest.raises(ValueError): # Or TypeError depending on your validation
+            ax.arrows3d(np.array([1, 2, 3]))
+        # Test 2D array with wrong last dimension
+        with pytest.raises(ValueError):
+            ax.arrows3d(np.array([[1, 2]])) # (N, 2) instead of (N, 3)
+
+    def test_arrows3d_mismatched_starts_ends_shape(self):
+        """Test that mismatched starts/ends (N) raises an error."""
+        ax = plt.figure().add_subplot(111, projection='3d')
+        starts = np.array([[0,0,0], [0.5,0.5,0.5]]) # 2 arrows
+        ends = np.array([[1,1,1]]) # 1 arrow
+        with pytest.raises(ValueError): # Assuming you have a check for N mismatch
+            ax.arrows3d(ends, starts=starts)
+
+    # --- Image Comparison Tests ---
+
+    @image_comparison(["mplot3d_arrows_basic.png"], remove_text=True, style='mpl20')
+    def test_arrows3d_image_basic(self):
+        """Image test for basic arrows from origin."""
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        ends_data = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+        ax.arrows3d(ends_data, colors=["red", "green", "blue"])
+        ax.set_title("Image Test: Arrows from Origin")
+        ax.set_xlim([-1.5, 1.5]); ax.set_ylim([-1.5, 1.5]); ax.set_zlim([-1.5, 1.5])
+        ax.view_init(elev=35, azim=45)
+
+    @image_comparison(["mplot3d_arrows_custom_starts.png"], remove_text=True, style='mpl20')
+    def test_arrows3d_image_custom_starts(self):
+        """Image test for arrows with custom start and end points."""
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        starts_data = np.array([[0.1, 0.1, 0.1], [-0.5, -0.5, 0.5]])
+        ends_data = np.array([[1.5, 0, 0], [0.5, 1.5, 1.5]])
+        ax.arrows3d(ends_data, starts=starts_data,
+                   colors=['cyan', 'magenta'])
+        ax.set_title("Image Test: Custom Starts")
+        ax.set_xlim([-1.5, 1.5]); ax.set_ylim([-1.5, 1.5]); ax.set_zlim([-1.5, 1.5])
+        ax.view_init(elev=35, azim=45)
+
+    @image_comparison(["mplot3d_arrows_single.png"], remove_text=True, style='mpl20')
+    def test_arrows3d_image_single_arrow(self):
+        """Image test for a single arrow."""
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        single_end = np.array([[0.7, 0.7, 0.7]])
+        ax.arrows3d(single_end, colors='darkgreen', linewidth=3, label='One Arrow')
+        ax.set_title("Image Test: Single Arrow")
+        ax.set_xlim([-1.5, 1.5]); ax.set_ylim([-1.5, 1.5]); ax.set_zlim([-1.5, 1.5])
+        ax.view_init(elev=35, azim=45)
+        ax.legend()
+
+    @image_comparison(["mplot3d_arrows_long_thin.png"], remove_text=True, style='mpl20')
+    def test_arrows3d_image_long_thin_arrows(self):
+        """Image test for long and thin arrows."""
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        starts_data = np.array([[-1, -1, -1], [0, 0, 0]])
+        ends_data = np.array([[2, 2, 2], [0, 0, 2]])
+        ax.arrows3d(ends_data, starts=starts_data,
+                   colors=['orange', 'navy'], linewidth=0.5)
+        ax.set_title("Image Test: Long Thin Arrows")
+        ax.set_xlim([-2.5, 2.5]); ax.set_ylim([-2.5, 2.5]); ax.set_zlim([-2.5, 2.5])
+        ax.view_init(elev=35, azim=45)
+        
 
 @image_comparison(["equal_box_aspect.png"], style="mpl20")
 def test_equal_box_aspect():
