@@ -28,12 +28,10 @@ import matplotlib.lines as mlines
 import matplotlib.patches as mpatches
 import matplotlib.container as mcontainer
 import matplotlib.transforms as mtransforms
-import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.axes._base import _axis_method_wrapper, _process_plot_format
 from matplotlib.transforms import Bbox
 from matplotlib.tri._triangulation import Triangulation
-from mpl_toolkits.mplot3d.art3d import Line3D, Poly3DCollection, patch_2d_to_3d, _paths_to_3d_segments, Line3DCollection
 
 from . import art3d
 from . import proj3d
@@ -4064,93 +4062,81 @@ class Axes3D(Axes):
 
     stem3D = stem
 
-    def arrows3d(self, ends, starts=None, label=None, colors=None, **kwargs):
+    def arrow3d(self, end, start=None, label=None, color=None, **kwargs):
         """
-        3D plot of multiple arrows
+        3D plot of a single arrow
 
         Parameters
         ----------
-        ends : array-like
-            (N, 3) size array of arrow end coordinates.
+        end : array-like
+            (1, 3) size array of arrow end coordinates.
             
-        starts : array-like, default: (0,0,0) for each arrow
-            (N, 3) size array of arrow start coordinates.
+        start : array-like, default: (0,0,0)
+            (1, 3) size array of arrow start coordinates.
             
         label : str, default: None
-            legend label to apply to this group of arrows.
+            legend label to apply to this arrow.
             
-        colors : str or list of str, default: none
-            color(s) to use for the arrows.
+        colors : str, default: none
+            color to use for the arrow.
             
         Returns
         -------
-        list of `~mpl_toolkits.mplot3d.art3d.Arrow3D`
-            The list of created arrows.
+        arrow : `~mpl_toolkits.mplot3d.art3d.Arrow3D`
+            The arrow object that was added to the axes.
             
         Examples
         --------
         .. plot:: gallery/mplot3d/arrows3d_demo.py
         """
-        ends = np.asarray(ends, dtype=float)
-        if ends.ndim != 2 or ends.shape[1] != 3:
-            raise ValueError("ends must be an (N, 3) array-like")
+        import matplotlib.pyplot as plt
         
+        # If no start points are given, default to (0, 0, 0) for each arrow
         if starts is None:
-            starts = np.zeros_like(ends, dtype=float)
-        else:
-            starts = np.asarray(starts, dtype=float)
-
-        # `starts` and `ends` shape must match
-        if starts.shape != ends.shape:
-            raise ValueError("starts and ends must have the same shape")
+            starts = np.zeros_like(end)
+            
+        # Validate input shapes
+        if start.shape != end.shape:
+            raise ValueError("start and end must have the same shape")
         
-        n_arrows = ends.shape[0]
-        if n_arrows == 0:
+        # check dimensions of ends
+        if len(end.shape) != 2 or end.shape[1] != 3:
+            raise ValueError("ends must be an (1, 3) array-like")
+        
+        # Ensure thaat there is at least one arrow to plot
+        if end.shape[0] == 0:
             raise ValueError("No arrows to plot; ends must not be empty")
 
-        if colors is None:
-            colors_iter = itertools.cycle(["k"])
-        elif isinstance(colors, str):
-            colors_iter = itertools.cycle([colors])
+        # if no color is provided, use black
+        # if a single color string is provided, use it
+        if color is None:
+            arrow_color = 'k'
         else:
-            colors_iter = itertools.cycle(colors)
+            arrow_color = color
 
+        # Set default arrow properties
+        # and update with any additional keyword arguments
         arrow_prop_dict = dict(
             mutation_scale=20, arrowstyle="-|>", shrinkA=0, shrinkB=0
         )
         arrow_prop_dict.update(kwargs)
         
-        fancy_arrows_to_collect = []
-        collection_kwargs = {}
-        for prop in ['edgecolor', 'facecolor', 'linewidth', 'alpha', 'zorder', 'visible', 'rasterized', 'antialised']:
-            if prop in arrow_prop_dict:
-                collection_kwargs[prop] = kwargs.pop(prop)
-                
-        if 'color' in kwargs:
-            collection_kwargs['facecolor'] = kwargs['color']
-            collection_kwargs['edgecolor'] = kwargs['color']
-            kwargs.pop('color')
-            
-        individual_arrow_kwargs = kwargs
-        
-        for ind, (s, e) in enumerate(np.stack((starts, ends), axis=1)):
-            a = Arrow3D(
-                [s[0], e[0]],
-                [s[1], e[1]],
-                [s[2], e[2]],
-                label=label if ind == 0 else None,
-                color=next(colors_iter),
-                **arrow_prop_dict,
-            )
-            fancy_arrows_to_collect.append(a)
-            
-        arrow_collection = art3d.Patch3DCollection(fancy_arrows_to_collect, **collection_kwargs)
-            
-        self.add_collection(arrow_collection)
+        s = start[0]
+        e = end[0]
+        # create an Arrow3D object for the arrow
+        a = Arrow3D(
+            [s[0], e[0]],  # x coordinates of start and end
+            [s[1], e[1]],  # y coordinates of start and end
+            [s[2], e[2]],  # z coordinates of start and end
+            label=label,
+            color=arrow_color,
+            **arrow_prop_dict,
+        )
+        self.add_artist(a)
 
         # store starts/ends on the axes for setting the limits
         self.points = np.vstack(
-            (starts, ends, getattr(self, "points", np.empty((0, 3))))
+            (start, end, getattr(self, "points", np.empty((0, 3))))
         )
         # only set limits if there are points to define them
         if self.points.shape[0] > 0:
@@ -4159,14 +4145,8 @@ class Axes3D(Axes):
             ):
                 min_val = self.points[:, i].min()
                 max_val = self.points[:, i].max()
-                # if min and max are identical (singular), expand the limits slightly
-                # otherwise, set them normally
-                if min_val == max_val:
-                    setter(min_val-0.5, max_val+0.5)
-                else:
-                    setter(min_val, max_val)
 
-        return [arrow_collection]
+        return a
 
 
 def get_test_data(delta=0.05):
@@ -4307,15 +4287,55 @@ class _Quaternion:
 
 
 class Arrow3D(mpatches.FancyArrowPatch):
+    """
+    A 3D arrow patch, used for plotting arrows in 3D space. Inherits from
+    `matplotlib.patches.FancyArrowPatch` to leverage its functionality.
+    """
     def __init__(self, xs, ys, zs, *args, **kwargs):
+        """
+        Initializer of Arrow3D object.
+        
+        Parameters
+        ----------
+            xs, ys, zs : array-like
+                The x, y, and z coordinates of the arrow's start and end points.
+                
+            *args, **kwargs : additional arguments
+                Additional arguments are passed to the parent class
+                `matplotlib.patches.FancyArrowPatch`.
+        """
+        # Initialize the base FancyArrowPatch with dummy start and end positions.
         super().__init__((0,0), (0,0), *args, **kwargs)
+        # Store the 3D coordinates for later use in projection.
         self._verts3d = xs, ys, zs
 
     def do_3d_projection(self, renderer=None):
+        """
+        Projects the 3D arrow onto the 2D plane of the axes.
+        
+        Parameters
+        ----------
+            renderer : `~matplotlib.backend_bases.RendererBase`, default : None
+                The renderer to use for the projection. If None, the current
+                renderer is used.
+
+        Returns
+        -------
+            float
+                The minimum z-coordinate of the arrow in the projected space.
+        """
+        # Unpack the stored 3D coordinates.
         xs3d, ys3d, zs3d = self._verts3d
+        
+        # If the arrow is not associated with any axes, simply return the minimum z.
         if self.axes is None:
             return np.min(zs3d)
+        
+        # Use the proj3d module to convert 3D coordinates to 2D screen coordinates.
         xs, ys, zs = proj3d.proj_transform(xs3d, ys3d, zs3d, self.axes.M)
+        
+        # Update the 2D positions of the FancyArrowPatch to the projected coordinates.
         self.set_positions((xs[0],ys[0]),(xs[1],ys[1]))
 
+        # Return the lowest z-value from the projection. This value is used to correctly order artists.
         return np.min(zs)
