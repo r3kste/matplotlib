@@ -4090,6 +4090,8 @@ class Axes3D(Axes):
         .. plot:: gallery/mplot3d/arrows3d_demo.py
         """
 
+        had_data = self.has_data()
+
         # If no start points are given, default to (0, 0, 0) for each arrow
         if start is None:
             start = np.zeros_like(end)
@@ -4119,6 +4121,7 @@ class Axes3D(Axes):
         s = start
         e = end
         # create an Arrow3D object for the arrow
+        from mpl_toolkits.mplot3d.art3d import Arrow3D
         a = Arrow3D(
             [s[0], e[0]],
             [s[1], e[1]],
@@ -4129,19 +4132,8 @@ class Axes3D(Axes):
         )
         self.add_artist(a)
 
-        # store starts/ends on the axes for setting the limits
-        self.points = np.vstack(
-            (start, end, getattr(self, "points", np.empty((0, 3))))
-        )
-        # only set limits if there are points to define them
-        if self.points.shape[0] > 0:
-            for i, setter in enumerate(
-                (self.set_xlim3d, self.set_ylim3d, self.set_zlim3d)
-            ):
-                min_val = self.points[:, i].min()
-                max_val = self.points[:, i].max()
-
-        return a
+        self.auto_scale_xyz(
+            [s[0], e[0]], [s[1], e[1]], [s[2], e[2]], had_data)
 
 
 def get_test_data(delta=0.05):
@@ -4279,59 +4271,3 @@ class _Quaternion:
         elev = np.arcsin(np.clip(2*(qw*qy+qz*qx)/(qw*qw+qx*qx+qy*qy+qz*qz), -1, 1))
         roll = np.arctan2(2*(qw*qx-qy*qz), qw*qw-qx*qx-qy*qy+qz*qz)
         return elev, azim, roll
-
-
-class Arrow3D(mpatches.FancyArrowPatch):
-    """
-    A 3D arrow patch, used for plotting arrows in 3D space. Inherits from
-    `matplotlib.patches.FancyArrowPatch` to leverage its functionality.
-    """
-    def __init__(self, xs, ys, zs, *args, **kwargs):
-        """
-        Initializer of Arrow3D object.
-
-        Parameters
-        ----------
-            xs, ys, zs : array-like
-                The x, y, and z coordinates of the arrow's start and end points.
-
-            *args, **kwargs : additional arguments
-                Additional arguments are passed to the parent class
-                `matplotlib.patches.FancyArrowPatch`.
-        """
-        # Initialize the base FancyArrowPatch with dummy start and end positions.
-        super().__init__((0,0), (0,0), *args, **kwargs)
-        # Store the 3D coordinates for later use in projection.
-        self._verts3d = xs, ys, zs
-
-    def do_3d_projection(self, renderer=None):
-        """
-        Projects the 3D arrow onto the 2D plane of the axes.
-
-        Parameters
-        ----------
-            renderer : `~matplotlib.backend_bases.RendererBase`, default : None
-                The renderer to use for the projection. If None, the current
-                renderer is used.
-
-        Returns
-        -------
-            float
-                The minimum z-coordinate of the arrow in the projected space.
-        """
-        # Unpack the stored 3D coordinates.
-        xs3d, ys3d, zs3d = self._verts3d
-
-        # If the arrow is not associated with any axes, simply return the minimum z.
-        if self.axes is None:
-            return np.min(zs3d)
-
-        # Use the proj3d module to convert 3D coordinates to 2D screen coordinates.
-        xs, ys, zs = proj3d.proj_transform(xs3d, ys3d, zs3d, self.axes.M)
-
-        # Update the 2D positions of the FancyArrowPatch to the projected coordinates.
-        self.set_positions((xs[0],ys[0]),(xs[1],ys[1]))
-
-        # Return the lowest z-value from the projection.
-        # This value is used to correctly order artists.
-        return np.min(zs)
