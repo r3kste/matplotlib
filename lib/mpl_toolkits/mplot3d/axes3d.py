@@ -4068,44 +4068,39 @@ class Axes3D(Axes):
 
         Parameters
         ----------
-        end : array-like
-            (1, 3) size array of arrow end coordinates.
-            
-        start : array-like, default: (0,0,0)
-            (1, 3) size array of arrow start coordinates.
-            
+        end : 1D array
+            an array of shape (3,).
+
+        start : 1D array, default: (0,0,0)
+            an array of shape (3,).
+
         label : str, default: None
             legend label to apply to this arrow.
-            
+
         colors : str, default: none
             color to use for the arrow.
-            
+
         Returns
         -------
         arrow : `~mpl_toolkits.mplot3d.art3d.Arrow3D`
             The arrow object that was added to the axes.
-            
+
         Examples
         --------
         .. plot:: gallery/mplot3d/arrows3d_demo.py
         """
-        import matplotlib.pyplot as plt
-        
+
         # If no start points are given, default to (0, 0, 0) for each arrow
-        if starts is None:
-            starts = np.zeros_like(end)
-            
+        if start is None:
+            start = np.zeros_like(end)
+
         # Validate input shapes
         if start.shape != end.shape:
             raise ValueError("start and end must have the same shape")
-        
+
         # check dimensions of ends
-        if len(end.shape) != 2 or end.shape[1] != 3:
-            raise ValueError("ends must be an (1, 3) array-like")
-        
-        # Ensure thaat there is at least one arrow to plot
-        if end.shape[0] == 0:
-            raise ValueError("No arrows to plot; ends must not be empty")
+        if len(end.shape) != 1 or end.shape[0] != 3:
+            raise ValueError("ends must be an 1D array of shape (3,)")
 
         # if no color is provided, use black
         # if a single color string is provided, use it
@@ -4120,14 +4115,14 @@ class Axes3D(Axes):
             mutation_scale=20, arrowstyle="-|>", shrinkA=0, shrinkB=0
         )
         arrow_prop_dict.update(kwargs)
-        
-        s = start[0]
-        e = end[0]
+
+        s = start
+        e = end
         # create an Arrow3D object for the arrow
         a = Arrow3D(
-            [s[0], e[0]],  # x coordinates of start and end
-            [s[1], e[1]],  # y coordinates of start and end
-            [s[2], e[2]],  # z coordinates of start and end
+            [s[0], e[0]],
+            [s[1], e[1]],
+            [s[2], e[2]],
             label=label,
             color=arrow_color,
             **arrow_prop_dict,
@@ -4294,12 +4289,12 @@ class Arrow3D(mpatches.FancyArrowPatch):
     def __init__(self, xs, ys, zs, *args, **kwargs):
         """
         Initializer of Arrow3D object.
-        
+
         Parameters
         ----------
             xs, ys, zs : array-like
                 The x, y, and z coordinates of the arrow's start and end points.
-                
+
             *args, **kwargs : additional arguments
                 Additional arguments are passed to the parent class
                 `matplotlib.patches.FancyArrowPatch`.
@@ -4312,7 +4307,7 @@ class Arrow3D(mpatches.FancyArrowPatch):
     def do_3d_projection(self, renderer=None):
         """
         Projects the 3D arrow onto the 2D plane of the axes.
-        
+
         Parameters
         ----------
             renderer : `~matplotlib.backend_bases.RendererBase`, default : None
@@ -4326,16 +4321,17 @@ class Arrow3D(mpatches.FancyArrowPatch):
         """
         # Unpack the stored 3D coordinates.
         xs3d, ys3d, zs3d = self._verts3d
-        
+
         # If the arrow is not associated with any axes, simply return the minimum z.
         if self.axes is None:
             return np.min(zs3d)
-        
+
         # Use the proj3d module to convert 3D coordinates to 2D screen coordinates.
         xs, ys, zs = proj3d.proj_transform(xs3d, ys3d, zs3d, self.axes.M)
-        
+
         # Update the 2D positions of the FancyArrowPatch to the projected coordinates.
         self.set_positions((xs[0],ys[0]),(xs[1],ys[1]))
 
-        # Return the lowest z-value from the projection. This value is used to correctly order artists.
+        # Return the lowest z-value from the projection.
+        # This value is used to correctly order artists.
         return np.min(zs)
