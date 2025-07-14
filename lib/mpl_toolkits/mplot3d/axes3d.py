@@ -4062,7 +4062,8 @@ class Axes3D(Axes):
 
     stem3D = stem
 
-    def arrow3d(self, end, start=None, label=None, color=None, **kwargs):
+    @_preprocess_data()
+    def arrow3d(self, end, start=None, **kwargs):
         """
         3D plot of a single arrow
 
@@ -4074,66 +4075,39 @@ class Axes3D(Axes):
         start : 1D array, default: (0,0,0)
             an array of shape (3,).
 
-        label : str, default: None
-            legend label to apply to this arrow.
-
-        colors : str, default: none
-            color to use for the arrow.
+        **kwargs
+            All other keyword arguments are passed on to
+            `~mpl_toolkits.mplot3d.art3d.Arrow3D`.
 
         Returns
         -------
         arrow : `~mpl_toolkits.mplot3d.art3d.Arrow3D`
-            The arrow object that was added to the axes.
 
-        Examples
-        --------
-        .. plot:: gallery/mplot3d/arrows3d_demo.py
         """
 
         had_data = self.has_data()
 
-        # If no start points are given, default to (0, 0, 0) for each arrow
         if start is None:
             start = np.zeros_like(end)
 
-        # Validate input shapes
-        if start.shape != end.shape:
-            raise ValueError("start and end must have the same shape")
+        if np.shape(end) != (3,):
+            raise ValueError("end must be an array of length 3")
 
-        # check dimensions of ends
-        if len(end.shape) != 1 or end.shape[0] != 3:
-            raise ValueError("ends must be an 1D array of shape (3,)")
+        if np.shape(start) != (3,):
+            raise ValueError("start must be an array of length 3")
 
-        # if no color is provided, use black
-        # if a single color string is provided, use it
-        if color is None:
-            arrow_color = 'k'
-        else:
-            arrow_color = color
-
-        # Set default arrow properties
-        # and update with any additional keyword arguments
-        arrow_prop_dict = dict(
+        # Set default arrow properties and update with any additional keyword arguments
+        arrow_props = dict(
             mutation_scale=20, arrowstyle="-|>", shrinkA=0, shrinkB=0
         )
-        arrow_prop_dict.update(kwargs)
+        arrow_props.update(kwargs)
 
-        s = start
-        e = end
-        # create an Arrow3D object for the arrow
-        from mpl_toolkits.mplot3d.art3d import Arrow3D
-        a = Arrow3D(
-            [s[0], e[0]],
-            [s[1], e[1]],
-            [s[2], e[2]],
-            label=label,
-            color=arrow_color,
-            **arrow_prop_dict,
-        )
-        self.add_artist(a)
+        xs, ys, zs = [start[0], end[0]], [start[1], end[1]], [start[2], end[2]]
+        arrow = art3d.Arrow3D(xs, ys, zs, **arrow_props)
+        self.add_artist(arrow)
 
-        self.auto_scale_xyz(
-            [s[0], e[0]], [s[1], e[1]], [s[2], e[2]], had_data)
+        self.auto_scale_xyz(xs, ys, zs, had_data)
+        return arrow
 
 
 def get_test_data(delta=0.05):
