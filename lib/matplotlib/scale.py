@@ -405,7 +405,7 @@ class InvertedLogTransform(Transform):
         return LogTransform(self.base)
 
 
-class (ScaleBase):
+class LogScale(ScaleBase):
     """
     A standard logarithmic scale.  Care is taken to only plot positive values.
     """
