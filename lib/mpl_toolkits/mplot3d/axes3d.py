@@ -4091,7 +4091,7 @@ class Axes3D(Axes):
             raise ValueError("end must be an array of length 3")
         if np.shape(start) != (3,):
             raise ValueError("start must be an array of length 3")
-        # set any arrow properties and update with any additional keyword args
+        # Set default arrow properties and update with any additional keyword args
         arrow_props = dict(
             mutation_scale=20, arrowstyle="-|>", shrinkA=0, shrinkB=0
         )
