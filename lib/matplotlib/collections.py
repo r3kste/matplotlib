@@ -18,6 +18,7 @@ import warnings
 import numpy as np
 
 import matplotlib as mpl
+from matplotlib.path import Path
 from . import (_api, _path, artist, cbook, colorizer as mcolorizer, colors as mcolors,
                _docstring, hatch as mhatch, lines as mlines, path as mpath, transforms)
 from ._enums import JoinStyle, CapStyle
@@ -1426,6 +1427,8 @@ class FillBetweenPolyCollection(PolyCollection):
         self._interpolate = interpolate
         self._step = step
         verts = self._make_verts(t, f1, f2, where)
+        self._simplify = mpl.rcParams['path.simplify']
+        self._simplify_threshold = mpl.rcParams['path.simplify_threshold']
         super().__init__(verts, **kwargs)
 
     @staticmethod
@@ -1559,6 +1562,11 @@ class FillBetweenPolyCollection(PolyCollection):
             np.stack((t_slice, f1_slice), axis=-1),
             np.asarray([end]),
             np.stack((t_slice, f2_slice), axis=-1)[::-1]))
+
+        if self._simplify:
+            path = Path(pts)
+            path = path.cleaned(simplify=self._simplify_threshold)
+            pts = path.vertices
 
         return self._fix_pts_xy_order(pts)
 
