@@ -3040,92 +3040,10 @@ class AsinhNorm(Normalize):
         self._scale.linear_width = value
 
 
-class PowerNorm(Normalize):
-    r"""
-    Linearly map a given value to the 0-1 range and then apply
-    a power-law normalization over that range.
-
-    Parameters
-    ----------
-    gamma : float
-        Power law exponent.
-    vmin, vmax : float or None
-        If *vmin* and/or *vmax* is not given, they are initialized from the
-        minimum and maximum value, respectively, of the first input
-        processed; i.e., ``__call__(A)`` calls ``autoscale_None(A)``.
-    clip : bool, default: False
-        Determines the behavior for mapping values outside the range
-        ``[vmin, vmax]``.
-
-        If clipping is off, values above *vmax* are transformed by the power
-        function, resulting in values above 1, and values below *vmin* are linearly
-        transformed resulting in values below 0. This behavior is usually desirable, as
-        colormaps can mark these *under* and *over* values with specific colors.
-
-        If clipping is on, values below *vmin* are mapped to 0 and values above
-        *vmax* are mapped to 1. Such values become indistinguishable from
-        regular boundary values, which may cause misinterpretation of the data.
-
-    Notes
-    -----
-    The normalization formula is
-
-    .. math::
-
-        \left ( \frac{x - v_{min}}{v_{max}  - v_{min}} \right )^{\gamma}
-
-    For input values below *vmin*, gamma is set to one.
-    """
-    def __init__(self, gamma, vmin=None, vmax=None, clip=False):
-        super().__init__(vmin, vmax, clip)
-        self.gamma = gamma
-
-    def __call__(self, value, clip=None):
-        if clip is None:
-            clip = self.clip
-
-        result, is_scalar = self.process_value(value)
-
-        self.autoscale_None(result)
-        gamma = self.gamma
-        vmin, vmax = self.vmin, self.vmax
-        if vmin > vmax:
-            raise ValueError("minvalue must be less than or equal to maxvalue")
-        elif vmin == vmax:
-            result.fill(0)
-        else:
-            if clip:
-                mask = np.ma.getmask(result)
-                result = np.ma.array(np.clip(result.filled(vmax), vmin, vmax),
-                                     mask=mask)
-            resdat = result.data
-            resdat -= vmin
-            resdat /= (vmax - vmin)
-            resdat[resdat > 0] = np.power(resdat[resdat > 0], gamma)
-
-            result = np.ma.array(resdat, mask=result.mask, copy=False)
-        if is_scalar:
-            result = result[0]
-        return result
-
-    def inverse(self, value):
-        if not self.scaled():
-            raise ValueError("Not invertible until scaled")
-
-        result, is_scalar = self.process_value(value)
-
-        gamma = self.gamma
-        vmin, vmax = self.vmin, self.vmax
-
-        resdat = result.data
-        resdat[resdat > 0] = np.power(resdat[resdat > 0], 1 / gamma)
-        resdat *= (vmax - vmin)
-        resdat += vmin
-
-        result = np.ma.array(resdat, mask=result.mask, copy=False)
-        if is_scalar:
-            result = result[0]
-        return result
+PowerNorm = make_norm_from_scale(
+    functools.partial(scale.PowerScale))(Normalize)
+PowerNorm.__name__ = PowerNorm.__qualname__ = "PowerNorm"
+PowerNorm.__doc__ = "Normalize a given value to the 0-1 range using a power-law scale."
 
 
 class BoundaryNorm(Normalize):
