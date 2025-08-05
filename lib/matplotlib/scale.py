@@ -844,6 +844,7 @@ _scale_mapping = {
     'logit':  LogitScale,
     'function': FuncScale,
     'functionlog': FuncScaleLog,
+    'power' : PowerScale,
     }
 
 

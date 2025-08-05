@@ -3040,10 +3040,20 @@ class AsinhNorm(Normalize):
         self._scale.linear_width = value
 
 
-PowerNorm = make_norm_from_scale(
-    functools.partial(scale.PowerScale))(Normalize)
-PowerNorm.__name__ = PowerNorm.__qualname__ = "PowerNorm"
-PowerNorm.__doc__ = "Normalize a given value to the 0-1 range using a power-law scale."
+@make_norm_from_scale(
+    scale.PowerScale,
+    init=lambda gamma=0.5, vmin=None, vmax=None, clip=False: None)
+class PowerNorm(Normalize):
+    """
+    PowerNorm
+    """
+    @property
+    def gamma(self):
+        return self._scale.gamma
+
+    @gamma.setter
+    def gamma(self, value):
+        self._scale.gamma = value
 
 
 class BoundaryNorm(Normalize):
