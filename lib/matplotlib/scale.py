@@ -321,6 +321,7 @@ class PowerScale(ScaleBase):
             Power law exponent.
         """
         self._transform = PowerTransform(gamma)
+        self.subs = subs
 
     gamma = property(lambda self: self._transform.gamma)
 
