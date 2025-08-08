@@ -17,6 +17,7 @@ Name          Class                 Transform                        Inverted tr
 "log"         `LogScale`            `LogTransform`                   `InvertedLogTransform`
 "logit"       `LogitScale`          `LogitTransform`                 `LogisticTransform`
 "symlog"      `SymmetricalLogScale` `SymmetricalLogTransform`        `InvertedSymmetricalLogTransform`
+"power"       `PowerScale`          `PowerTransform`                 `InvertedPowerTransform`
 ============= ===================== ================================ =================================
 
 A user will often only use the scale name, e.g. when setting the scale through
@@ -40,7 +41,7 @@ from matplotlib import _api, _docstring
 from matplotlib.ticker import (
     NullFormatter, ScalarFormatter, LogFormatterSciNotation, LogitFormatter,
     NullLocator, LogLocator, AutoLocator, AutoMinorLocator,
-    SymmetricalLogLocator, AsinhLocator, LogitLocator)
+    SymmetricalLogLocator, AsinhLocator, LogitLocator, PowerLocator, )
 from matplotlib.transforms import Transform, IdentityTransform
 
 
@@ -263,6 +264,86 @@ class FuncScale(ScaleBase):
             axis.set_minor_locator(AutoMinorLocator())
         else:
             axis.set_minor_locator(NullLocator())
+
+
+class PowerTransform(Transform):
+    input_dims = output_dims = 1
+
+    def __init__(self, gamma, nonpositive='clip'):
+        super().__init__()
+
+        self.gamma = gamma
+        self._clip = _api.check_getitem(
+            {"clip": True, "mask": False}, nonpositive=nonpositive)
+
+    def __str__(self):
+        return "{}(gamma={}, nonpositive={!r})".format(
+            type(self).__name__, self.gamma, "clip" if self._clip else "mask")
+
+    def transform_non_affine(self, a):
+        with np.errstate(divide="ignore", invalid="ignore"):
+            out = np.power(a, self.gamma)
+            if self._clip:
+                out[a <= 0] = 0
+            return out
+
+    def inverted(self):
+        return InvertedPowerTransform(self.gamma)
+
+
+class InvertedPowerTransform(Transform):
+    input_dims = output_dims = 1
+
+    def __init__(self, gamma):
+        super().__init__()
+        self.gamma = gamma
+
+    def transform_non_affine(self, a):
+        if self.gamma == 0:
+            return np.inf
+        else:
+            return np.power(a, 1./self.gamma)
+
+
+class PowerScale(ScaleBase):
+    """
+    A standard power scale
+    """
+    name = 'power'
+
+    def __init__(self, axis=None,*, gamma=0.5,subs=None):
+        """
+        Parameters
+        ----------
+        axis : `~matplotlib.axis.Axis`
+            The axis for the scale.
+        gamma : float
+            Power law exponent.
+        """
+        self._transform = PowerTransform(gamma)
+        self.subs = subs
+
+    gamma = property(lambda self: self._transform.gamma)
+
+    def get_transform(self):
+
+        return self._transform
+
+    def set_default_locators_and_formatters(self, axis):
+        axis.set_major_locator(PowerLocator(self.gamma))
+        axis.set_major_formatter(ScalarFormatter())
+        axis.set_minor_locator(PowerLocator(self.gamma, self.subs))
+        axis.set_minor_formatter(NullFormatter())
+
+
+    def limit_range_for_scale(self, vmin, vmax, minpos):
+        """Limit the domain to positive values."""
+        if not np.isfinite(minpos):
+            minpos = 1e-300
+
+        return (minpos if vmin <= 0 else vmin,
+                minpos if vmax <= 0 else vmax)
+
 
 
 class LogTransform(Transform):
@@ -762,6 +843,7 @@ _scale_mapping = {
     'logit':  LogitScale,
     'function': FuncScale,
     'functionlog': FuncScaleLog,
+    'power': PowerScale,
     }
 
 
