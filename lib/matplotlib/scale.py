@@ -17,7 +17,7 @@ Name          Class                 Transform                        Inverted tr
 "log"         `LogScale`            `LogTransform`                   `InvertedLogTransform`
 "logit"       `LogitScale`          `LogitTransform`                 `LogisticTransform`
 "symlog"      `SymmetricalLogScale` `SymmetricalLogTransform`        `InvertedSymmetricalLogTransform`
-"power"       `PowerScale`          `PowerTransform`                 `InvertedPowerTransform` 
+"power"       `PowerScale`          `PowerTransform`                 `InvertedPowerTransform`
 ============= ===================== ================================ =================================
 
 A user will often only use the scale name, e.g. when setting the scale through
@@ -41,7 +41,7 @@ from matplotlib import _api, _docstring
 from matplotlib.ticker import (
     NullFormatter, ScalarFormatter, LogFormatterSciNotation, LogitFormatter,
     NullLocator, LogLocator, AutoLocator, AutoMinorLocator,
-    SymmetricalLogLocator, AsinhLocator, LogitLocator)
+    SymmetricalLogLocator, AsinhLocator, LogitLocator, PowerLocator, )
 from matplotlib.transforms import Transform, IdentityTransform
 
 
@@ -265,6 +265,7 @@ class FuncScale(ScaleBase):
         else:
             axis.set_minor_locator(NullLocator())
 
+
 class PowerTransform(Transform):
     input_dims = output_dims = 1
 
@@ -305,12 +306,12 @@ class InvertedPowerTransform(Transform):
 
 
 class PowerScale(ScaleBase):
-    '''
+    """
     A standard power scale
-    '''
+    """
     name = 'power'
 
-    def __init__(self, axis, gamma=0.5):
+    def __init__(self, axis=None,*, gamma=0.5,subs=None):
         """
         Parameters
         ----------
@@ -328,14 +329,11 @@ class PowerScale(ScaleBase):
         return self._transform
 
     def set_default_locators_and_formatters(self, axis):
-        axis.set_major_locator(AutoLocator())
+        axis.set_major_locator(PowerLocator(self.gamma))
         axis.set_major_formatter(ScalarFormatter())
+        axis.set_minor_locator(PowerLocator(self.gamma, self.subs))
         axis.set_minor_formatter(NullFormatter())
-        if (axis.axis_name == 'x' and mpl.rcParams['xtick.minor.visible'] or
-                axis.axis_name == 'y' and mpl.rcParams['ytick.minor.visible']):
-            axis.set_minor_locator(AutoMinorLocator())
-        else:
-            axis.set_minor_locator(NullLocator())
+
 
     def limit_range_for_scale(self, vmin, vmax, minpos):
         """Limit the domain to positive values."""
@@ -844,7 +842,7 @@ _scale_mapping = {
     'logit':  LogitScale,
     'function': FuncScale,
     'functionlog': FuncScaleLog,
-    'power' : PowerScale,
+    'power': PowerScale,
     }
 
 
