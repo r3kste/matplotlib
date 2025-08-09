@@ -2689,3 +2689,26 @@ def test_ndarray_color_kwargs_value_error():
     ax = fig.add_subplot(111, projection='3d')
     ax.scatter(1, 0, 0, color=np.array([0, 0, 0, 1]))
     fig.canvas.draw()
+
+
+@check_figures_equal()
+def test_arrow3d_default(fig_test, fig_ref):
+    ax_ref = fig_ref.add_subplot(projection='3d')
+    start = [0, 0, 0]
+    end = [1, 2, 3]
+    ax_ref.arrow3d(end, start)
+
+    ax_test = fig_test.add_subplot(projection='3d')
+    ax_test.arrow3d(end)
+
+
+@mpl3d_image_comparison(['arrow3d_custom_props.png'], style='mpl20')
+def test_arrow3d_custom_props():
+    fig = plt.figure()
+    ax = fig.add_subplot(projection='3d')
+
+    start = [1, 2, 3]
+    end = [4, 5, 6]
+
+    ax.arrow3d(end, start,
+               arrowstyle="->, head_length=0.6, head_width=0.3", color='red')
