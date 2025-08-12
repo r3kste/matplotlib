@@ -3042,7 +3042,7 @@ class AsinhNorm(Normalize):
 
 @make_norm_from_scale(
     scale.PowerScale,
-    init=lambda gamma=0.5, vmin=None, vmax=None, clip=False: None)
+    init=lambda gamma=0.5, clip=False, vmin=None, vmax=None: None)
 class PowerNorm(Normalize):
     """
     PowerNorm
