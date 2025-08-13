@@ -2707,8 +2707,12 @@ def test_arrow3d_custom_props():
     fig = plt.figure()
     ax = fig.add_subplot(projection='3d')
 
-    start = [1, 2, 3]
-    end = [4, 5, 6]
-
-    ax.arrow3d(end, start,
+    start1 = [1, 2, 3]
+    end1 = [4, 5, 6]
+    ax.arrow3d(end1, start1,
                arrowstyle="->, head_length=0.6, head_width=0.3", color='red')
+
+    start2 = [2, 5, 7]
+    end2 = [4, 6, -8]
+    ax.arrow3d(end2, start2, color='violet', ls='--',
+               lw=2)
