@@ -2874,6 +2874,12 @@ def _make_norm_from_scale(
                 clip = self.clip
             if clip:
                 value = np.clip(value, self.vmin, self.vmax)
+            if(scale_cls==scale.PowerScale):
+                t_value=value-self.vmin
+                t_value/=self.vmax - self.vmin
+                t_value = self._trf.transform(t_value).reshape(np.shape(t_value))
+                t_value = np.ma.masked_invalid(t_value, copy=False)
+                return t_value[0] if is_scalar else t_value
             t_value = self._trf.transform(value).reshape(np.shape(value))
             t_vmin, t_vmax = self._trf.transform([self.vmin, self.vmax])
             if not np.isfinite([t_vmin, t_vmax]).all():
@@ -2888,6 +2894,12 @@ def _make_norm_from_scale(
                 raise ValueError("Not invertible until scaled")
             if self.vmin > self.vmax:
                 raise ValueError("vmin must be less or equal to vmax")
+            if(scale_cls==scale.PowerScale):
+                value, is_scalar = self.process_value(value)
+                value=(self._trf.inverted().transform(value) .reshape(np.shape(value)))
+                value*=self.vmax-self.vmin
+                value+=self.vmin
+                return value[0] if is_scalar else value
             t_vmin, t_vmax = self._trf.transform([self.vmin, self.vmax])
             if not np.isfinite([t_vmin, t_vmax]).all():
                 raise ValueError("Invalid vmin or vmax")
@@ -3042,7 +3054,7 @@ class AsinhNorm(Normalize):
 
 @make_norm_from_scale(
     scale.PowerScale,
-    init=lambda gamma=0.5, clip=False, vmin=None, vmax=None: None)
+    init=lambda gamma=0.5,vmin=None, vmax=None,clip=False: None)
 class PowerNorm(Normalize):
     """
     PowerNorm

@@ -279,13 +279,14 @@ class PowerTransform(Transform):
             type(self).__name__, self.gamma, "clip" if self._clip else "mask")
 
     def transform_non_affine(self, a):
-        input_mask=np.ma.getmask(a)
-        d=np.asarray(a.data)
-        out = np.where(d>=0,np.power(d, self.gamma),(d))
-        if self._clip:
-            out[d <= 0] = 0
-        mout=np.ma.array(out,mask=input_mask)
-        return mout
+        with np.errstate(divide="ignore", invalid="ignore"):
+            mask=np.ma.getmask(a)
+            d=np.asarray(a.data)
+            out = np.where(d>=0,np.power(d,self.gamma),d)
+            if self._clip:
+                out[d <= 0] = 0
+            mout=np.ma.masked_array(out,mask=mask)
+            return mout
 
     def inverted(self):
         return InvertedPowerTransform(self.gamma,self._clip)
@@ -305,7 +306,8 @@ class InvertedPowerTransform(Transform):
         else:
             with np.errstate(divide="ignore", invalid="ignore"):
                 input_mask=np.ma.getmask(a)
-                out=np.where(a>=0,np.power(a, 1./self.gamma),a)
+                d=np.asarray(a.data)
+                out=np.where(d>0,np.power(d, 1./self.gamma),d)
                 if self._clip:
                     out[a <= 0] = 0
                 mout = np.ma.array(out,mask=input_mask)
@@ -319,7 +321,7 @@ class PowerScale(ScaleBase):
     name = 'power'
 
     @_make_axis_parameter_optional
-    def __init__(self, axis=None,*, gamma=0.5,subs=None,clip=False,vmin=None):
+    def __init__(self, axis=None,*, gamma=0.5,subs=None,clip=False):
         """
         Parameters
         ----------
