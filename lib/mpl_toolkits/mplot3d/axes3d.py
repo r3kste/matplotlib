@@ -4062,6 +4062,46 @@ class Axes3D(Axes):
 
     stem3D = stem
 
+    @_preprocess_data()
+    def arrow3d(self, end, start=None, **kwargs):
+        """
+        3D plot of a single arrow
+
+        Parameters
+        ----------
+        end : 1D array
+            an array of shape (3,).
+
+        start : 1D array, default: (0,0,0)
+            an array of shape (3,).
+
+        **kwargs
+            All other keyword arguments are passed on to
+            `~mpl_toolkits.mplot3d.art3d.Arrow3D`.
+
+        Returns
+        -------
+        arrow : `~mpl_toolkits.mplot3d.art3d.Arrow3D`
+
+        """
+        had_data = self.has_data()
+        if start is None:
+            start = np.zeros_like(end)
+        if np.shape(end) != (3,):
+            raise ValueError("end must be an array of length 3")
+        if np.shape(start) != (3,):
+            raise ValueError("start must be an array of length 3")
+        # Set default arrow properties and update with any additional keyword args
+        arrow_props = dict(
+            mutation_scale=20, arrowstyle="-|>", shrinkA=0, shrinkB=0
+        )
+        arrow_props.update(kwargs)
+        xs, ys, zs = [start[0], end[0]], [start[1], end[1]], [start[2], end[2]]
+        arrow = art3d.Arrow3D(xs, ys, zs, **arrow_props)
+        self.add_artist(arrow)
+        self.auto_scale_xyz(xs, ys, zs, had_data)
+        return arrow
+
 
 def get_test_data(delta=0.05):
     """Return a tuple X, Y, Z with a test data set."""
