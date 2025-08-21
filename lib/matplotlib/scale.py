@@ -17,6 +17,7 @@ Name          Class                 Transform                        Inverted tr
 "log"         `LogScale`            `LogTransform`                   `InvertedLogTransform`
 "logit"       `LogitScale`          `LogitTransform`                 `LogisticTransform`
 "symlog"      `SymmetricalLogScale` `SymmetricalLogTransform`        `InvertedSymmetricalLogTransform`
+"power"       `PowerScale`          `PowerTransform`                 `InvertedPowerTransform`
 ============= ===================== ================================ =================================
 
 A user will often only use the scale name, e.g. when setting the scale through
@@ -40,7 +41,7 @@ from matplotlib import _api, _docstring
 from matplotlib.ticker import (
     NullFormatter, ScalarFormatter, LogFormatterSciNotation, LogitFormatter,
     NullLocator, LogLocator, AutoLocator, AutoMinorLocator,
-    SymmetricalLogLocator, AsinhLocator, LogitLocator)
+    SymmetricalLogLocator, AsinhLocator, LogitLocator,)
 from matplotlib.transforms import Transform, IdentityTransform
 
 
@@ -263,6 +264,101 @@ class FuncScale(ScaleBase):
             axis.set_minor_locator(AutoMinorLocator())
         else:
             axis.set_minor_locator(NullLocator())
+
+
+class PowerTransform(Transform):
+    input_dims = output_dims = 1
+
+    def __init__(self, gamma, clip=False):
+        super().__init__()
+        self.gamma = gamma
+        self._clip = clip
+
+    def __str__(self):
+        return "{}(gamma={}, nonpositive={!r})".format(
+            type(self).__name__, self.gamma, "clip" if self._clip else "mask")
+
+    def transform_non_affine(self, a):
+        with np.errstate(divide="ignore", invalid="ignore"):
+            mask=np.ma.getmask(a)
+            d=np.asarray(a.data)
+            out = np.where(d>=0,np.power(d,self.gamma),d)
+            if self._clip:
+                out[d <= 0] = 0
+            mout=np.ma.masked_array(out,mask=mask)
+            return mout
+
+    def inverted(self):
+        return InvertedPowerTransform(self.gamma,self._clip)
+
+
+class InvertedPowerTransform(Transform):
+    input_dims = output_dims = 1
+
+    def __init__(self, gamma,clip=False):
+        super().__init__()
+        self.gamma = gamma
+        self._clip = clip
+
+    def transform_non_affine(self, a):
+        if self.gamma == 0:
+            return np.inf
+        else:
+            with np.errstate(divide="ignore", invalid="ignore"):
+                input_mask=np.ma.getmask(a)
+                d=np.asarray(a.data)
+                out=np.where(d>0,np.power(d, 1./self.gamma),d)
+                if self._clip:
+                    out[a <= 0] = 0
+                mout = np.ma.array(out,mask=input_mask)
+                return mout
+
+
+class PowerScale(ScaleBase):
+    """
+    A standard power scale
+    """
+    name = 'power'
+
+    @_make_axis_parameter_optional
+    def __init__(self, axis=None,*, gamma=0.5,subs=None,clip=False):
+        """
+        Parameters
+        ----------
+        axis : `~matplotlib.axis.Axis`
+            The axis for the scale.
+        gamma : float
+            Power law exponent.
+        """
+        self._transform = PowerTransform(gamma,clip)
+        self.subs = subs
+
+    gamma = property(lambda self: self._transform.gamma)
+
+    def get_transform(self):
+
+        return self._transform
+
+    def set_default_locators_and_formatters(self, axis):
+        # docstring inherited
+        axis.set_major_locator(AutoLocator())
+        axis.set_major_formatter(ScalarFormatter())
+        axis.set_minor_formatter(NullFormatter())
+        # update the minor locator for x and y axis based on rcParams
+        if (axis.axis_name == 'x' and mpl.rcParams['xtick.minor.visible'] or
+                axis.axis_name == 'y' and mpl.rcParams['ytick.minor.visible']):
+            axis.set_minor_locator(AutoMinorLocator())
+        else:
+            axis.set_minor_locator(NullLocator())
+
+    def limit_range_for_scale(self, vmin, vmax, minpos):
+        """Limit the domain to positive values."""
+        if not np.isfinite(minpos):
+            minpos = 1e-300
+
+        return (minpos if vmin <= 0 else int(vmin),
+                minpos if vmax <= 0 else int(vmax))
+
 
 
 class LogTransform(Transform):
@@ -762,6 +858,7 @@ _scale_mapping = {
     'logit':  LogitScale,
     'function': FuncScale,
     'functionlog': FuncScaleLog,
+    'power': PowerScale,
     }
 
 
