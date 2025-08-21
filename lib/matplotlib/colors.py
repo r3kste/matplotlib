@@ -2761,7 +2761,8 @@ class CenteredNorm(Normalize):
             self.vmax = self.vcenter + abs(halfrange)
 
 
-def make_norm_from_scale(scale_cls, base_norm_cls=None, *, init=None):
+def make_norm_from_scale(scale_cls, base_norm_cls=None,*, init=None,
+                         norm_before_trf=False):
     """
     Decorator for building a `.Normalize` subclass from a `~.scale.ScaleBase`
     subclass.
@@ -2793,7 +2794,8 @@ def make_norm_from_scale(scale_cls, base_norm_cls=None, *, init=None):
     """
 
     if base_norm_cls is None:
-        return functools.partial(make_norm_from_scale, scale_cls, init=init)
+        return functools.partial(make_norm_from_scale, scale_cls, init=init,
+                                 norm_before_trf=norm_before_trf)
 
     if isinstance(scale_cls, functools.partial):
         scale_args = scale_cls.args
@@ -2807,13 +2809,13 @@ def make_norm_from_scale(scale_cls, base_norm_cls=None, *, init=None):
 
     return _make_norm_from_scale(
         scale_cls, scale_args, scale_kwargs_items,
-        base_norm_cls, inspect.signature(init))
+        base_norm_cls, inspect.signature(init), norm_before_trf)
 
 
 @functools.cache
 def _make_norm_from_scale(
     scale_cls, scale_args, scale_kwargs_items,
-    base_norm_cls, bound_init_signature,
+    base_norm_cls, bound_init_signature,norm_before_trf
 ):
     """
     Helper for `make_norm_from_scale`.
@@ -2874,7 +2876,7 @@ def _make_norm_from_scale(
                 clip = self.clip
             if clip:
                 value = np.clip(value, self.vmin, self.vmax)
-            if(scale_cls==scale.PowerScale):
+            if norm_before_trf:
                 t_value=value-self.vmin
                 t_value/=self.vmax - self.vmin
                 t_value = self._trf.transform(t_value).reshape(np.shape(t_value))
@@ -2894,7 +2896,7 @@ def _make_norm_from_scale(
                 raise ValueError("Not invertible until scaled")
             if self.vmin > self.vmax:
                 raise ValueError("vmin must be less or equal to vmax")
-            if(scale_cls==scale.PowerScale):
+            if norm_before_trf:
                 value, is_scalar = self.process_value(value)
                 value=(self._trf.inverted().transform(value) .reshape(np.shape(value)))
                 value*=self.vmax-self.vmin
@@ -3054,7 +3056,8 @@ class AsinhNorm(Normalize):
 
 @make_norm_from_scale(
     scale.PowerScale,
-    init=lambda gamma=0.5,vmin=None, vmax=None,clip=False: None)
+    init=lambda gamma=0.5, vmin=None, vmax=None, clip=False: None,
+    norm_before_trf=True)
 class PowerNorm(Normalize):
     """
     PowerNorm
