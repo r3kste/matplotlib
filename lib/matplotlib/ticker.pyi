@@ -257,24 +257,6 @@ class SymmetricalLogLocator(Locator):
         self, subs: Sequence[float] | None = ..., numticks: int | None = ...
     ) -> None: ...
 
-class PowerLocator(Locator):
-    numticks: int | None
-    def __init__(
-        self,
-        gamma: float = ...,
-        subs: None | Literal["auto", "all"] | Sequence[float] = ...,
-        *,
-        numticks: int | None = ...,
-    ) -> None: ...
-    def set_params(
-        self,
-        gamma: float | None = ...,
-        subs: Literal["auto", "all"] | Sequence[float] | None = ...,
-        *,
-        numticks: int | None = ...,
-    ) -> None: ...
-
-
 class AsinhLocator(Locator):
     linear_width: float
     numticks: int

@@ -41,7 +41,7 @@ from matplotlib import _api, _docstring
 from matplotlib.ticker import (
     NullFormatter, ScalarFormatter, LogFormatterSciNotation, LogitFormatter,
     NullLocator, LogLocator, AutoLocator, AutoMinorLocator,
-    SymmetricalLogLocator, AsinhLocator, LogitLocator,)
+    SymmetricalLogLocator, AsinhLocator, LogitLocator)
 from matplotlib.transforms import Transform, IdentityTransform
 
 
