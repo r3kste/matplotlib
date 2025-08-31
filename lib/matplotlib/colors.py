@@ -2847,7 +2847,7 @@ def _make_norm_from_scale(
                 pass
             return (_picklable_norm_constructor,
                     (scale_cls, scale_args, scale_kwargs_items,
-                     base_norm_cls, bound_init_signature),
+                     base_norm_cls, bound_init_signature, norm_before_trf),
                     vars(self))
 
         def __init__(self, *args, **kwargs):
