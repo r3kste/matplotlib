@@ -2761,7 +2761,7 @@ class CenteredNorm(Normalize):
             self.vmax = self.vcenter + abs(halfrange)
 
 
-def make_norm_from_scale(scale_cls, base_norm_cls=None,*, init=None,
+def make_norm_from_scale(scale_cls, base_norm_cls=None, *, init=None,
                          norm_before_trf=False):
     """
     Decorator for building a `.Normalize` subclass from a `~.scale.ScaleBase`
@@ -2878,9 +2878,9 @@ def _make_norm_from_scale(
                 value = np.clip(value, self.vmin, self.vmax)
 
             if norm_before_trf:
-                t_value = value - self.vmin
-                t_value /= (self.vmax - self.vmin)
-                t_value = self._trf.transform(t_value).reshape(np.shape(t_value))
+                value -= self.vmin
+                value /= (self.vmax - self.vmin)
+                t_value = self._trf.transform(value).reshape(np.shape(value))
                 t_value = np.ma.masked_invalid(t_value, copy=False)
                 return t_value[0] if is_scalar else t_value
 
@@ -2898,18 +2898,17 @@ def _make_norm_from_scale(
                 raise ValueError("Not invertible until scaled")
             if self.vmin > self.vmax:
                 raise ValueError("vmin must be less or equal to vmax")
+            value, is_scalar = self.process_value(value)
 
             if norm_before_trf:
-                value, is_scalar = self.process_value(value)
                 value = self._trf.inverted().transform(value).reshape(np.shape(value))
-                value *= (self.vmax - self.vmin)
-                value += self.vmin
-                return value[0] if is_scalar else value
+                rescaled = value * (self.vmax - self.vmin)
+                rescaled += self.vmin
+                return rescaled[0] if is_scalar else rescaled
 
             t_vmin, t_vmax = self._trf.transform([self.vmin, self.vmax])
             if not np.isfinite([t_vmin, t_vmax]).all():
                 raise ValueError("Invalid vmin or vmax")
-            value, is_scalar = self.process_value(value)
             rescaled = value * (t_vmax - t_vmin)
             rescaled += t_vmin
             value = (self._trf
