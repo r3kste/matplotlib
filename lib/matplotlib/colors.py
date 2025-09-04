@@ -3062,8 +3062,40 @@ class AsinhNorm(Normalize):
     init=lambda gamma=0.5, vmin=None, vmax=None, clip=False: None,
     norm_before_trf=True)
 class PowerNorm(Normalize):
-    """
-    PowerNorm
+    r"""
+    Linearly map a given value to the 0-1 range and then apply
+    a power-law normalization over that range.
+
+    Parameters
+    ----------
+    gamma : float
+        Power law exponent.
+    vmin, vmax : float or None
+        If *vmin* and/or *vmax* is not given, they are initialized from the
+        minimum and maximum value, respectively, of the first input
+        processed; i.e., ``__call__(A)`` calls ``autoscale_None(A)``.
+    clip : bool, default: False
+        Determines the behavior for mapping values outside the range
+        ``[vmin, vmax]``.
+
+        If clipping is off, values above *vmax* are transformed by the power
+        function, resulting in values above 1, and values below *vmin* are linearly
+        transformed resulting in values below 0. This behavior is usually desirable, as
+        colormaps can mark these *under* and *over* values with specific colors.
+
+        If clipping is on, values below *vmin* are mapped to 0 and values above
+        *vmax* are mapped to 1. Such values become indistinguishable from
+        regular boundary values, which may cause misinterpretation of the data.
+
+    Notes
+    -----
+    The normalization formula is
+
+    .. math::
+
+        \left ( \frac{x - v_{min}}{v_{max}  - v_{min}} \right )^{\gamma}
+
+    For input values below *vmin*, gamma is set to one.
     """
     @property
     def gamma(self):
