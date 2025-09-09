@@ -280,12 +280,12 @@ class PowerTransform(Transform):
 
     def transform_non_affine(self, a):
         with np.errstate(divide="ignore", invalid="ignore"):
-            mask=np.ma.getmask(a)
-            d=np.asarray(a.data)
-            out = np.where(d>=0,np.power(d,self.gamma),d)
+            mask = np.ma.getmask(a)
+            d = np.asarray(a.data)
+            out = np.where(d >= 0, np.power(d,self.gamma), d)
             if self._clip:
                 out[d <= 0] = 0
-            mout=np.ma.masked_array(out,mask=mask)
+            mout = np.ma.masked_array(out, mask=mask)
             return mout
 
     def inverted(self):
@@ -305,13 +305,16 @@ class InvertedPowerTransform(Transform):
             return np.inf
         else:
             with np.errstate(divide="ignore", invalid="ignore"):
-                input_mask=np.ma.getmask(a)
-                d=np.asarray(a.data)
-                out=np.where(d>0,np.power(d, 1./self.gamma),d)
+                input_mask = np.ma.getmask(a)
+                d = np.asarray(a.data)
+                out = np.where(d > 0, np.power(d, 1./self.gamma), d)
                 if self._clip:
                     out[a <= 0] = 0
-                mout = np.ma.array(out,mask=input_mask)
+                mout = np.ma.array(out, mask=input_mask)
                 return mout
+
+    def inverted(self):
+        return PowerTransform(self.gamma)
 
 
 class PowerScale(ScaleBase):
@@ -321,7 +324,7 @@ class PowerScale(ScaleBase):
     name = 'power'
 
     @_make_axis_parameter_optional
-    def __init__(self, axis=None,*, gamma=0.5,subs=None,clip=False):
+    def __init__(self, axis=None, *, gamma=0.5, clip=False):
         """
         Parameters
         ----------
@@ -331,12 +334,9 @@ class PowerScale(ScaleBase):
             Power law exponent.
         """
         self._transform = PowerTransform(gamma,clip)
-        self.subs = subs
-
-    gamma = property(lambda self: self._transform.gamma)
+        gamma = property(lambda self: self._transform.gamma)
 
     def get_transform(self):
-
         return self._transform
 
     def set_default_locators_and_formatters(self, axis):
@@ -350,15 +350,6 @@ class PowerScale(ScaleBase):
             axis.set_minor_locator(AutoMinorLocator())
         else:
             axis.set_minor_locator(NullLocator())
-
-    def limit_range_for_scale(self, vmin, vmax, minpos):
-        """Limit the domain to positive values."""
-        if not np.isfinite(minpos):
-            minpos = 1e-300
-
-        return (minpos if vmin <= 0 else int(vmin),
-                minpos if vmax <= 0 else int(vmax))
-
 
 
 class LogTransform(Transform):
