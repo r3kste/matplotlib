@@ -58,7 +58,7 @@ class PowerScale(ScaleBase):
         axis: Axis | None = ...,
         *,
         gamma: float = ...,
-        subs: Iterable[int] | None = ...,
+        clip: bool = False,
     ) -> None: ...
     @property
     def gamma(self) -> float: ...

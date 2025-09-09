@@ -334,7 +334,8 @@ class PowerScale(ScaleBase):
             Power law exponent.
         """
         self._transform = PowerTransform(gamma,clip)
-        gamma = property(lambda self: self._transform.gamma)
+
+    gamma = property(lambda self: self._transform.gamma)
 
     def get_transform(self):
         return self._transform
