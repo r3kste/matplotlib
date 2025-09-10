@@ -355,7 +355,7 @@ class Collection(mcolorizer.ColorizingArtist):
         return transform, offset_trf, offsets, paths
 
     @artist.allow_rasterization
-    def draw(self, renderer):
+    def draw_old(self, renderer):
         if not self.get_visible():
             return
         renderer.open_group(self.__class__.__name__, self.get_gid())
@@ -504,6 +504,50 @@ class Collection(mcolorizer.ColorizingArtist):
         gc.restore()
         renderer.close_group(self.__class__.__name__)
         self.stale = False
+
+    def draw(self, renderer):
+        if not self.get_visible():
+            return
+        renderer.open_group(self.__class__.__name__, self.get_gid())
+
+        self.update_scalarmappable()
+
+        transform, offset_trf, offsets, paths = self._prepare_points()
+
+        vgc = renderer.new_vgc()
+        self._set_gc_clip(vgc)
+        vgc._snap = [self.get_snap()]
+
+        if self._hatch:
+            vgc._hatch = [self._hatch]
+            vgc._hatch_linewidth = [self._hatch_linewidth]
+
+        if self.get_sketch_params() is not None:
+            vgc._sketch = [self.get_sketch_params()]
+
+        if self._joinstyle:
+            vgc._joinstyle = [self._joinstyle]
+
+        if self._capstyle:
+            vgc._capstyle = [self._capstyle]
+
+        vgc._facecolor = self.get_facecolor()
+        vgc._rgb = self.get_edgecolor()
+        vgc._hatch_color = self.get_hatchcolor()
+        vgc._linewidth = self._linewidths
+        vgc._linestyle = self._linestyles
+        vgc._antialiased = self._antialiaseds
+        vgc._url = self._urls
+
+
+        renderer.draw_path_collection(
+            vgc,
+            transform.frozen(),
+            paths,
+            self.get_transforms(),
+            offsets,
+            offset_trf,
+        )
 
     def set_pickradius(self, pickradius):
         """

@@ -258,6 +258,29 @@ class RendererBase:
                 transform.translate(xo, yo)
             self.draw_path(gc0, path, transform, rgbFace)
 
+    def draw_path_collection_new(
+        self,
+        vgc,
+        master_transform,
+        paths,
+        all_transforms,
+        offsets,
+        offset_trans,
+    ):
+        path_ids = self._iter_collection_raw_paths(
+            master_transform, paths, all_transforms
+        )
+
+        for xo, yo, path_id, gc, rgbFace in self._iter_collection_new(
+            vgc, list(path_ids), offsets, offset_trans
+        ):
+            path, transform = path_id
+
+            if xo != 0 or yo != 0:
+                transform = transform.frozen()
+                transform.translate(xo, yo)
+            self.draw_path(gc, path, transform, rgbFace)
+
     def draw_quad_mesh(self, gc, master_transform, meshWidth, meshHeight,
                        coordinates, offsets, offsetTrans, facecolors,
                        antialiased, edgecolors):
@@ -424,6 +447,57 @@ class RendererBase:
                 gc0.set_url(url)
             yield xo, yo, pathid, gc0, fc
         gc0.restore()
+
+    def _iter_collection_new(self, vgc, path_ids, offsets, offset_trans):
+        Npaths = len(path_ids)
+        Noffsets = len(offsets)
+        N = max(Npaths, Noffsets)
+        Nfacecolors = len(vgc._facecolor)
+        Nedgecolors = len(vgc._rgb)
+        Nhatchcolors = len(vgc._hatch_color)
+        Nlinewidths = len(vgc._linewidth)
+        Nlinestyles = len(vgc._linestyle)
+        Nurls = len(vgc._url)
+
+        if (Nfacecolors == 0 and Nedgecolors == 0 and Nhatchcolors == 0) or Npaths == 0:
+            return
+
+        def cycle_or_default(seq, default=None):
+            # Cycle over *seq* if it is not empty; else always yield *default*.
+            return itertools.cycle(seq) if len(seq) else itertools.repeat(default)
+
+        pathids = cycle_or_default(path_ids)
+        toffsets = cycle_or_default(offset_trans.transform(offsets), (0, 0))
+        fcs = cycle_or_default(vgc._facecolor)
+        ecs = cycle_or_default(vgc._rgb)
+        hcs = cycle_or_default(vgc._hatch_color)
+        lws = cycle_or_default(vgc._linewidth)
+        lss = cycle_or_default(vgc._linestyle)
+        aas = cycle_or_default(vgc._antialiased)
+        urls = cycle_or_default(vgc._url)
+
+        if Nedgecolors == 0:
+            vgc._linewidth = [0.0]
+
+        for pathid, (xo, yo), fc, ec, hc, lw, ls, aa, url in itertools.islice(
+            zip(pathids, toffsets, fcs, ecs, hcs, lws, lss, aas, urls), N
+        ):
+            if not (np.isfinite(xo) and np.isfinite(yo)):
+                continue
+            gc = vgc.next_gc()
+            if Nedgecolors:
+                if Nlinewidths:
+                    gc.set_linewidth(lw)
+                # if Nlinestyles:
+                #     gc.set_dashes(ls)
+                if len(ec) == 4 and ec[3] == 0.0:
+                    gc.set_linewidth(0)
+                else:
+                    gc.set_foreground(ec)
+            if fc is not None and len(fc) == 4 and fc[3] == 0:
+                fc = None
+            yield xo, yo, pathid, gc, fc
+        gc.restore()
 
     def get_image_magnification(self):
         """
@@ -619,6 +693,9 @@ class RendererBase:
     def new_gc(self):
         """Return an instance of a `.GraphicsContextBase`."""
         return GraphicsContextBase()
+
+    def new_vgc(self):
+        return VectorizedGraphicsContextBase()
 
     def points_to_pixels(self, points):
         """
@@ -1019,6 +1096,75 @@ class GraphicsContextBase:
         self._sketch = (
             None if scale is None
             else (scale, length or 128., randomness or 16.))
+
+
+class VectorizedGraphicsContextBase:
+    def __init__(self):
+        self._alpha = [1.0]
+        self._forced_alpha = [False]
+        self._antialiased = [1]
+        self._capstyle = [CapStyle("butt")]
+        self._cliprect = None
+        self._clippath = None
+        self._dashes = [(0, None)]
+        self._joinstyle = [JoinStyle("round")]
+        self._linestyle = ["solid"]
+        self._linewidth = [1]
+        self._facecolor = []
+        self._rgb = [(0.0, 0.0, 0.0, 1.0)]
+        self._hatch = []
+        self._hatch_color = []
+        self._hatch_linewidth = []
+        self._url = [None]
+        self._gid = [None]
+        self._snap = [None]
+        self._sketch = [None]
+
+        self.idx = 0
+
+    def next_gc(self):
+        vectorized_attributes = [
+            "_alpha",
+            "_forced_alpha",
+            "_antialiased",
+            "_capstyle",
+            "_dashes",
+            "_joinstyle",
+            "_linestyle",
+            "_linewidth",
+            "_rgb",
+            "_hatch",
+            "_hatch_color",
+            "_hatch_linewidth",
+            "_url",
+            "_gid",
+            "_snap",
+            "_sketch",
+        ]
+        non_vectorized_attributes = [
+            "_cliprect",
+            "_clippath",
+        ]
+
+        gc = GraphicsContextBase()
+        for attr in vectorized_attributes:
+            values = getattr(self, attr)
+            if len(values):
+                setattr(gc, attr, values[self.idx % len(values)])
+        for attr in non_vectorized_attributes:
+            setattr(gc, attr, getattr(self, attr))
+        self.idx += 1
+
+        return gc
+
+    def set_clip_rectangle(self, rectangle):
+        """Set the clip rectangle to a `.Bbox` or None."""
+        self._cliprect = rectangle
+
+    def set_clip_path(self, path):
+        """Set the clip path to a `.TransformedPath` or None."""
+        _api.check_isinstance((transforms.TransformedPath, None), path=path)
+        self._clippath = path
 
 
 class TimerBase:
