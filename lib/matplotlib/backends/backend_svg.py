@@ -733,12 +733,15 @@ class RendererSVG(RendererBase):
             self.writer.end('a')
         writer.end('g')
 
-    def draw_path_collection(self, gc, master_transform, paths, all_transforms,
-                             offsets, offset_trans, facecolors, edgecolors,
-                             linewidths, linestyles, antialiaseds, urls,
-                             offset_position, *, hatchcolors=None):
-        if hatchcolors is None:
-            hatchcolors = []
+    def draw_path_collection(
+        self,
+        vgc,
+        master_transform,
+        paths,
+        all_transforms,
+        offsets,
+        offset_trans,
+    ):
         # Is the optimization worth it? Rough calculation:
         # cost of emitting a path in-line is
         #    (len_path + 5) * uses_per_path
@@ -746,15 +749,18 @@ class RendererSVG(RendererBase):
         #    (len_path + 3) + 9 * uses_per_path
         len_path = len(paths[0].vertices) if len(paths) > 0 else 0
         uses_per_path = self._iter_collection_uses_per_path(
-            paths, all_transforms, offsets, facecolors, edgecolors)
+            paths, all_transforms, offsets, vgc._facecolor, vgc._rgb)
         should_do_optimization = \
             len_path + 9 * uses_per_path + 3 < (len_path + 5) * uses_per_path
-        if not should_do_optimization:
-            return super().draw_path_collection(
-                gc, master_transform, paths, all_transforms,
-                offsets, offset_trans, facecolors, edgecolors,
-                linewidths, linestyles, antialiaseds, urls,
-                offset_position, hatchcolors=hatchcolors)
+        if True:
+            return super().draw_path_collection_new(
+                vgc,
+                master_transform,
+                paths,
+                all_transforms,
+                offsets,
+                offset_trans,
+            )
 
         writer = self.writer
         path_codes = []
