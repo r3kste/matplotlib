@@ -282,14 +282,14 @@ class PowerTransform(Transform):
         with np.errstate(divide="ignore", invalid="ignore"):
             mask = np.ma.getmask(a)
             d = np.asarray(a.data)
-            out = np.where(d >= 0, np.power(d,self.gamma), d)
+            out = np.where(d >= 0, np.power(d, self.gamma), d)
             if self._clip:
                 out[d <= 0] = 0
             mout = np.ma.masked_array(out, mask=mask)
             return mout
 
     def inverted(self):
-        return InvertedPowerTransform(self.gamma,self._clip)
+        return InvertedPowerTransform(self.gamma, self._clip)
 
 
 class InvertedPowerTransform(Transform):
@@ -307,14 +307,14 @@ class InvertedPowerTransform(Transform):
             with np.errstate(divide="ignore", invalid="ignore"):
                 input_mask = np.ma.getmask(a)
                 d = np.asarray(a.data)
-                out = np.where(d > 0, np.power(d, 1./self.gamma), d)
+                out = np.where(d > 0, np.power(d, 1. / self.gamma), d)
                 if self._clip:
                     out[a <= 0] = 0
                 mout = np.ma.array(out, mask=input_mask)
                 return mout
 
     def inverted(self):
-        return PowerTransform(self.gamma)
+        return PowerTransform(self.gamma, self.clip)
 
 
 class PowerScale(ScaleBase):
@@ -333,7 +333,7 @@ class PowerScale(ScaleBase):
         gamma : float
             Power law exponent.
         """
-        self._transform = PowerTransform(gamma,clip)
+        self._transform = PowerTransform(gamma, clip)
 
     gamma = property(lambda self: self._transform.gamma)
 
