@@ -335,7 +335,7 @@ def make_norm_from_scale(
     base_norm_cls: type[Normalize],
     *,
     init: Callable | None = ...,
-    norm_before_trf: bool = False
+    norm_before_trf: bool = ...,
 ) -> type[Normalize]: ...
 @overload
 def make_norm_from_scale(
@@ -343,7 +343,7 @@ def make_norm_from_scale(
     base_norm_cls: None = ...,
     *,
     init: Callable | None = ...,
-    norm_before_trf: bool = False
+    norm_before_trf: bool = ...,
 ) -> Callable[[type[Normalize]], type[Normalize]]: ...
 
 class FuncNorm(Normalize):
@@ -388,10 +388,10 @@ class AsinhNorm(Normalize):
 class PowerNorm(Normalize):
     def __init__(
         self,
-        gamma: float = 0.5,
+        gamma: float = ...,
         vmin: float | None = ...,
         vmax: float | None = ...,
-        clip: bool = False,
+        clip: bool = ...,
     ) -> None: ...
     @property
     def gamma(self) -> float: ...

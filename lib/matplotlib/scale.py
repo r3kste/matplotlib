@@ -275,8 +275,8 @@ class PowerTransform(Transform):
         self._clip = clip
 
     def __str__(self):
-        return "{}(gamma={}, nonpositive={!r})".format(
-            type(self).__name__, self.gamma, "clip" if self._clip else "mask")
+        return "{}(gamma={}, clip={!r})".format(
+            type(self).__name__, self.gamma, self._clip)
 
     def transform_non_affine(self, a):
         with np.errstate(divide="ignore", invalid="ignore"):
@@ -314,7 +314,7 @@ class InvertedPowerTransform(Transform):
                 return mout
 
     def inverted(self):
-        return PowerTransform(self.gamma, self.clip)
+        return PowerTransform(self.gamma, self._clip)
 
 
 class PowerScale(ScaleBase):
