@@ -295,7 +295,7 @@ class PowerTransform(Transform):
 class InvertedPowerTransform(Transform):
     input_dims = output_dims = 1
 
-    def __init__(self, gamma,clip=False):
+    def __init__(self, gamma, clip=False):
         super().__init__()
         self.gamma = gamma
         self._clip = clip
