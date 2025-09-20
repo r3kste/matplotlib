@@ -269,36 +269,32 @@ class FuncScale(ScaleBase):
 class PowerTransform(Transform):
     input_dims = output_dims = 1
 
-    def __init__(self, gamma, clip=False):
+    def __init__(self, gamma):
         super().__init__()
         self.gamma = gamma
-        self._clip = clip
 
     def __str__(self):
-        return "{}(gamma={}, clip={!r})".format(
-            type(self).__name__, self.gamma, self._clip)
+        return "{}(gamma={})".format(
+            type(self).__name__, self.gamma)
 
     def transform_non_affine(self, a):
         with np.errstate(divide="ignore", invalid="ignore"):
             mask = np.ma.getmask(a)
             d = np.asarray(a.data)
             out = np.where(d >= 0, np.power(d, self.gamma), d)
-            if self._clip:
-                out[d <= 0] = 0
             mout = np.ma.masked_array(out, mask=mask)
             return mout
 
     def inverted(self):
-        return InvertedPowerTransform(self.gamma, self._clip)
+        return InvertedPowerTransform(self.gamma)
 
 
 class InvertedPowerTransform(Transform):
     input_dims = output_dims = 1
 
-    def __init__(self, gamma, clip=False):
+    def __init__(self, gamma):
         super().__init__()
         self.gamma = gamma
-        self._clip = clip
 
     def transform_non_affine(self, a):
         if self.gamma == 0:
@@ -308,13 +304,11 @@ class InvertedPowerTransform(Transform):
                 input_mask = np.ma.getmask(a)
                 d = np.asarray(a.data)
                 out = np.where(d > 0, np.power(d, 1. / self.gamma), d)
-                if self._clip:
-                    out[a <= 0] = 0
                 mout = np.ma.array(out, mask=input_mask)
                 return mout
 
     def inverted(self):
-        return PowerTransform(self.gamma, self._clip)
+        return PowerTransform(self.gamma)
 
 
 class PowerScale(ScaleBase):
@@ -324,16 +318,16 @@ class PowerScale(ScaleBase):
     name = 'power'
 
     @_make_axis_parameter_optional
-    def __init__(self, axis=None, *, gamma=0.5, clip=False):
+    def __init__(self, axis=None, *, gamma=0.5):
         """
         Parameters
         ----------
         axis : `~matplotlib.axis.Axis`
             The axis for the scale.
-        gamma : float
+        gamma : float, default: 0.5
             Power law exponent.
         """
-        self._transform = PowerTransform(gamma, clip)
+        self._transform = PowerTransform(gamma)
 
     gamma = property(lambda self: self._transform.gamma)
 
