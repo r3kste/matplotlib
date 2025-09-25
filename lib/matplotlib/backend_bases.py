@@ -1021,6 +1021,51 @@ class GraphicsContextBase:
             else (scale, length or 128., randomness or 16.))
 
 
+class VectorizedGraphicsContextBase:
+    def __init__(self):
+        self._alpha = [1.0]
+        self._forced_alpha = [False]
+        self._antialiaseds = [1]
+        self._capstyle = [CapStyle('butt')]
+        self._cliprect = None
+        self._clippath = None
+        self._dashes = [(0, None)]
+        self._joinstyles = [JoinStyle('round')]
+        self._linestyles = ['solid']
+        self._linewidths = [1]
+        self._edgecolors = [(0.0,0.0,0.0,1.0)]
+        self._facecolors = [(0.0,0.0,0.0,1.0)]
+        self._hatch = []
+        self._hatchcolors = []
+        self._hatch_linewidths = []
+        self._urls = [None]
+        self._gid = [None]
+        self._snap = [None]
+        self._sketch = [None]
+
+    def copy_properties(self, vgc):
+        """Copy properties from *vgc* to self."""
+        self._alpha = vgc._alpha
+        self._forced_alpha = vgc._forced_alpha
+        self._antialiaseds = vgc._antialiaseds
+        self._capstyle = vgc._capstyle
+        self._cliprect = vgc._cliprect
+        self._clippath = vgc._clippath
+        self._dashes = vgc._dashes
+        self._joinstyles = vgc._joinstyles
+        self._linestyles = vgc._linestyles
+        self._linewidths = vgc._linewidths
+        self._edgecolors = vgc._edgecolors
+        self._facecolors = vgc._facecolors
+        self._hatch = vgc._hatch
+        self._hatchcolors = vgc._hatchcolors
+        self._hatch_linewidths = vgc._hatch_linewidths
+        self._urls = vgc._urls
+        self._gid = vgc._gid
+        self._snap = vgc._snap
+        self._sketch = vgc._sketch
+
+
 class TimerBase:
     """
     A base class for providing timer events, useful for things animations.
