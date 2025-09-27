@@ -189,6 +189,9 @@ class GraphicsContextBase:
         randomness: float | None = ...,
     ) -> None: ...
 
+class VectorizedGraphicsContextBase:
+    def __init__(self) -> None: ...
+
 class TimerBase:
     callbacks: list[tuple[Callable, tuple, dict[str, Any]]]
     def __init__(
