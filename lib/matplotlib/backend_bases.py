@@ -1023,10 +1023,10 @@ class GraphicsContextBase:
 
 class VectorizedGraphicsContextBase:
     def __init__(self):
-        self._alpha = [1.0]
-        self._forced_alpha = [False]
+        self._alphas = [1.0]
+        self._forced_alphas = [False]
         self._antialiaseds = [1]
-        self._capstyle = [CapStyle('butt')]
+        self._capstyles = [CapStyle('butt')]
         self._cliprect = None
         self._clippath = None
         self._dashes = [(0, None)]
@@ -1035,13 +1035,13 @@ class VectorizedGraphicsContextBase:
         self._linewidths = [1]
         self._edgecolors = [(0.0, 0.0, 0.0, 1.0)]
         self._facecolors = [(0.0, 0.0, 0.0, 1.0)]
-        self._hatch = []
+        self._hatches = []
         self._hatchcolors = []
         self._hatch_linewidths = []
         self._urls = [None]
-        self._gid = [None]
-        self._snap = [None]
-        self._sketch = [None]
+        self._gids = [None]
+        self._snaps = [None]
+        self._sketches = [None]
 
 
 class TimerBase:
