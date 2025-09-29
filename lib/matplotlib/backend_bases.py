@@ -207,10 +207,10 @@ class RendererBase:
                                transforms.Affine2D().translate(x, y),
                                rgbFace)
 
-    def draw_path_collection(self, gc, master_transform, paths, all_transforms,
-                             offsets, offset_trans, facecolors, edgecolors,
-                             linewidths, linestyles, antialiaseds, urls,
-                             offset_position, *, hatchcolors=None):
+    def draw_path_collection(self, gc_or_vgc, master_transform, paths, all_transforms,
+                             offsets, offset_trans, facecolors=None, edgecolors=None,
+                             linewidths=None, linestyles=None, antialiaseds=None,
+                             urls=None, offset_position=None, *, hatchcolors=None):
         """
         Draw a collection of *paths*.
 
@@ -242,10 +242,42 @@ class RendererBase:
 
         if hatchcolors is None:
             hatchcolors = []
+        alphas = []
+        forced_alphas = []
+        capstyles = []
+        dashes = []
+        joinstyles = []
+        hatch_linewidths = []
+        snaps = []
+        gids = []
+        sketches = []
+        if isinstance(gc_or_vgc, VectorizedGraphicsContextBase):
+            facecolors = gc_or_vgc.get_facecolors()
+            edgecolors = gc_or_vgc.get_edgecolors()
+            linewidths = gc_or_vgc.get_linewidths()
+            linestyles = gc_or_vgc.get_linestyles()
+            antialiaseds = gc_or_vgc.get_antialiaseds()
+            urls = gc_or_vgc.get_urls()
+            hatchcolors = gc_or_vgc.get_hatchcolors()
+            alphas = gc_or_vgc._alphas
+            forced_alphas = gc_or_vgc._forced_alphas
+            capstyles = gc_or_vgc._capstyles
+            dashes = gc_or_vgc._dashes
+            joinstyles = gc_or_vgc._joinstyles
+            hatch_linewidths = gc_or_vgc._hatch_linewidths
+            snaps = gc_or_vgc._snaps
+            gids = gc_or_vgc._gids
+            sketches = gc_or_vgc._sketches
+            gc = self.new_gc()
+            gc.set_clip_rectangle(gc_or_vgc._cliprect)
+            gc.set_clip_path(gc_or_vgc._clippath)
+            gc_or_vgc = gc
 
         for xo, yo, path_id, gc0, rgbFace in self._iter_collection(
-                gc, list(path_ids), offsets, offset_trans,
+                gc_or_vgc, list(path_ids), offsets, offset_trans,
                 facecolors, edgecolors, linewidths, linestyles,
+                alphas, forced_alphas, capstyles, dashes, joinstyles,
+                hatch_linewidths, snaps, gids, sketches,
                 antialiaseds, urls, offset_position, hatchcolors=hatchcolors):
             path, transform = path_id
             # Only apply another translation if we have an offset, else we
@@ -345,6 +377,8 @@ class RendererBase:
 
     def _iter_collection(self, gc, path_ids, offsets, offset_trans, facecolors,
                          edgecolors, linewidths, linestyles,
+                         alphas, forced_alphas, capstyles, dashes, joinstyles,
+                         hatch_linewidths, snaps, gids, sketches,
                          antialiaseds, urls, offset_position, *, hatchcolors):
         """
         Helper method (along with `_iter_collection_raw_paths`) to implement
@@ -377,6 +411,15 @@ class RendererBase:
         Nlinewidths = len(linewidths)
         Nlinestyles = len(linestyles)
         Nurls = len(urls)
+        Nalphas = len(alphas)
+        Nforced_alphas = len(forced_alphas)
+        Ncapstyles = len(capstyles)
+        Ndashes = len(dashes)
+        Njoinstyles = len(joinstyles)
+        Nhatch_linewidths = len(hatch_linewidths)
+        Nsnaps = len(snaps)
+        Ngids = len(gids)
+        Nsketches = len(sketches)
 
         if (Nfacecolors == 0 and Nedgecolors == 0 and Nhatchcolors == 0) or Npaths == 0:
             return
@@ -398,12 +441,23 @@ class RendererBase:
         lss = cycle_or_default(linestyles)
         aas = cycle_or_default(antialiaseds)
         urls = cycle_or_default(urls)
+        aps = cycle_or_default(alphas)
+        fas = cycle_or_default(forced_alphas)
+        css = cycle_or_default(capstyles)
+        das = cycle_or_default(dashes)
+        jss = cycle_or_default(joinstyles)
+        hls = cycle_or_default(hatch_linewidths)
+        sps = cycle_or_default(snaps)
+        gds = cycle_or_default(gids)
+        sks = cycle_or_default(sketches)
 
         if Nedgecolors == 0:
             gc0.set_linewidth(0.0)
 
-        for pathid, (xo, yo), fc, ec, hc, lw, ls, aa, url in itertools.islice(
-                zip(pathids, toffsets, fcs, ecs, hcs, lws, lss, aas, urls), N):
+        for (pathid, (xo, yo), fc, ec, hc, lw, ls, aa, url, ap, fa, cs, da,
+             js, hl, sp, gd, sk) in itertools.islice(
+                zip(pathids, toffsets, fcs, ecs, hcs, lws, lss, aas, urls,
+                    aps, fas, css, das, jss, hls, sps, gds, sks), N):
             if not (np.isfinite(xo) and np.isfinite(yo)):
                 continue
             if Nedgecolors:
@@ -419,6 +473,24 @@ class RendererBase:
                 gc0.set_hatch_color(hc)
             if fc is not None and len(fc) == 4 and fc[3] == 0:
                 fc = None
+            if fa is False:
+                gc0.set_alpha(None)
+            elif Nalphas:
+                gc0.set_alpha(ap)
+            if Ncapstyles:
+                gc0.set_capstyle(cs)
+            if Ndashes:
+                gc0.set_dashes(da[0], da[1])
+            if Njoinstyles:
+                gc0.set_joinstyle(js)
+            if Nhatch_linewidths:
+                gc0.set_hatch_linewidth(hl)
+            if Nsnaps:
+                gc0.set_snap(sp)
+            if Ngids:
+                gc0.set_gid(gd)
+            if Nsketches:
+                gc0.set_sketch_params(sk[0], sk[1], sk[2])
             gc0.set_antialiased(aa)
             if Nurls:
                 gc0.set_url(url)
