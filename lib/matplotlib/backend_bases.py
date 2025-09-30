@@ -240,45 +240,32 @@ class RendererBase:
         path_ids = self._iter_collection_raw_paths(master_transform,
                                                    paths, all_transforms)
 
-        if hatchcolors is None:
-            hatchcolors = []
-        alphas = []
-        forced_alphas = []
-        capstyles = []
-        dashes = []
-        joinstyles = []
-        hatch_linewidths = []
-        snaps = []
-        gids = []
-        sketches = []
-        if isinstance(gc_or_vgc, VectorizedGraphicsContextBase):
-            facecolors = gc_or_vgc.get_facecolors()
-            edgecolors = gc_or_vgc.get_edgecolors()
-            linewidths = gc_or_vgc.get_linewidths()
-            linestyles = gc_or_vgc.get_linestyles()
-            antialiaseds = gc_or_vgc.get_antialiaseds()
-            urls = gc_or_vgc.get_urls()
-            hatchcolors = gc_or_vgc.get_hatchcolors()
-            alphas = gc_or_vgc._alphas
-            forced_alphas = gc_or_vgc._forced_alphas
-            capstyles = gc_or_vgc._capstyles
-            dashes = gc_or_vgc._dashes
-            joinstyles = gc_or_vgc._joinstyles
-            hatch_linewidths = gc_or_vgc._hatch_linewidths
-            snaps = gc_or_vgc._snaps
-            gids = gc_or_vgc._gids
-            sketches = gc_or_vgc._sketches
-            gc = self.new_gc()
-            gc.set_clip_rectangle(gc_or_vgc._cliprect)
-            gc.set_clip_path(gc_or_vgc._clippath)
-            gc_or_vgc = gc
+        if isinstance(gc_or_vgc, GraphicsContextBase):
+            vgc = VectorizedGraphicsContextBase()
+            vgc._alphas = [gc_or_vgc.get_alpha()]
+            vgc._forced_alphas = [gc_or_vgc.get_forced_alpha()]
+            vgc._antialiaseds = antialiaseds
+            vgc._capstyles = [gc_or_vgc.get_capstyle()]
+            vgc._cliprect = gc_or_vgc.get_clip_rectangle()
+            vgc._clippath = gc_or_vgc.get_clip_path()
+            vgc._joinstyles = [gc_or_vgc.get_joinstyle()]
+            vgc._linestyles = linestyles
+            vgc._linewidths = linewidths
+            vgc._edgecolors = edgecolors
+            vgc._facecolors = facecolors
+            vgc._hatches = [gc_or_vgc.get_hatch()]
+            vgc._hatchcolors = hatchcolors
+            vgc._hatch_linewidths = [gc_or_vgc.get_hatch_linewidth()]
+            vgc._urls = urls
+            vgc._gids = [gc_or_vgc.get_gid()]
+            vgc._snaps = [gc_or_vgc.get_snap()]
+            vgc._sketches = [gc_or_vgc.get_sketch_params()]
+        elif isinstance(gc_or_vgc, VectorizedGraphicsContextBase):
+            vgc = gc_or_vgc
 
         for xo, yo, path_id, gc0, rgbFace in self._iter_collection(
-                gc_or_vgc, list(path_ids), offsets, offset_trans,
-                facecolors, edgecolors, linewidths, linestyles,
-                alphas, forced_alphas, capstyles, dashes, joinstyles,
-                hatch_linewidths, snaps, gids, sketches,
-                antialiaseds, urls, offset_position, hatchcolors=hatchcolors):
+            vgc, list(path_ids), offsets, offset_trans
+        ):
             path, transform = path_id
             # Only apply another translation if we have an offset, else we
             # reuse the initial transform.
@@ -375,11 +362,7 @@ class RendererBase:
         N = max(Npath_ids, len(offsets))
         return (N + Npath_ids - 1) // Npath_ids
 
-    def _iter_collection(self, gc, path_ids, offsets, offset_trans, facecolors,
-                         edgecolors, linewidths, linestyles,
-                         alphas, forced_alphas, capstyles, dashes, joinstyles,
-                         hatch_linewidths, snaps, gids, sketches,
-                         antialiaseds, urls, offset_position, *, hatchcolors):
+    def _iter_collection(self, vgc, path_ids, offsets, offset_trans):
         """
         Helper method (along with `_iter_collection_raw_paths`) to implement
         `draw_path_collection` in a memory-efficient manner.
