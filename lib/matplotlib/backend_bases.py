@@ -1091,7 +1091,7 @@ class VectorizedGraphicsContextBase:
         self._capstyles = [CapStyle('butt')]
         self._cliprect = None
         self._clippath = None
-        self._dashes = [(0, None)]
+        self._dashes = [(0.0, None)]
         self._joinstyles = [JoinStyle('round')]
         self._linestyles = ['solid']
         self._linewidths = [1]
@@ -1111,13 +1111,13 @@ class VectorizedGraphicsContextBase:
     def get_forced_alphas(self):
         return self._forced_alphas
 
-    def get_antialiased(self):
+    def get_antialiaseds(self):
         return self._antialiaseds
 
     def get_capstyles(self):
         capstyles = []
         for capstyle in self._capstyles:
-            capstyles.append(capstyle)
+            capstyles.append(capstyle.name)
         return capstyles
 
     def get_clip_rectangle(self):
@@ -1139,7 +1139,7 @@ class VectorizedGraphicsContextBase:
     def get_joinstyles(self):
         joinstyles = []
         for joinstyle in self._joinstyles:
-            joinstyles.append(joinstyle)
+            joinstyles.append(joinstyle.name)
         return joinstyles
 
     def get_linewidths(self):
@@ -1154,7 +1154,7 @@ class VectorizedGraphicsContextBase:
     def get_hatches(self):
         return self._hatches
 
-    def get_hatchcolors(self):
+    def get_hatch_colors(self):
         return self._hatchcolors
 
     def get_hatch_linewidths(self):
@@ -1171,6 +1171,110 @@ class VectorizedGraphicsContextBase:
 
     def get_sketches_params(self):
         return self._sketches
+
+    def set_alphas(self, alphas):
+        for i, alpha in enumerate(alphas):
+            if alpha is not None:
+                self._alphas[i] = alpha
+                self._forced_alphas[i] = True
+            else:
+                self._alphas[i] = 1.0
+                self._forced_alphas[i] = False
+
+    def set_antialiseds(self, b_vector):
+        for i, b in enumerate(b_vector):
+            self._antialiaseds[i] = int(bool(b))
+
+    @_docstring.interpd
+    def set_capstyles(self, cs_vector):
+        for i, cs in enumerate(cs_vector):
+            self._capstyles[i] = CapStyle(cs)
+
+    def set_clip_rectangle(self, rectangle):
+        self._cliprect = rectangle
+
+    def set_clip_path(self, path):
+        _api.check_isinstance((transforms.TransformedPath, None), path=path)
+
+    def set_dashes(self, dash_offset_vector, dash_list_vector):
+        if len(dash_offset_vector) == len(dash_list_vector):
+            for i in range(len(dash_offset_vector)):
+                dash_offset, dash_list = dash_offset_vector[i], dash_list_vector[i]
+                if dash_list is not None:
+                    dl = np.asarray(dash_list)
+                    if np.any(dl < 0.0):
+                        raise ValueError(
+                            "All values in the dash list must be non-negative.")
+                    if dl.size and not np.any(dl > 0.0):
+                        raise ValueError(
+                            'At least one value in the dash list must be positive.')
+                self._dashes[i] = dash_offset, dash_list
+        else:
+            raise ValueError(
+                "Length of vector of dash_offset and dash_list is not equal.")
+
+    @_docstring.interpd
+    def set_joinstyles(self, js_vector):
+        for i, js in enumerate(js_vector):
+            self._joinstyles[i] = JoinStyle(js)
+
+    def set_linewidths(self, w_vector):
+        for i, w in enumerate(w_vector):
+            self._linewidths[i] = float(w)
+
+    def set_edgecolors(self, edgecolors):
+        for i, edgecolor in enumerate(edgecolors):
+            self._edgecolors[i] = edgecolor
+
+    def set_facecolors(self, facecolors):
+        for i, facecolor in enumerate(facecolors):
+            isRGBA = bool(len(facecolor) - 3)
+            if self._forced_alphas[i] and isRGBA:
+                self._facecolors[i] = facecolor[:3] + (self._alphas[i],)
+            elif self._forced_alphas[i]:
+                self._facecolors[i] = colors.to_rgba(facecolor, self._alphas[i])
+            elif isRGBA:
+                self._facecolors[i] = facecolor
+            else:
+                self._facecolors[i] = colors.to_rgba(facecolor)
+
+    def set_urls(self, urls):
+        for i, url in enumerate(urls):
+            self._urls[i] = url
+
+    def set_gids(self, ids):
+        for i, id in enumerate(ids):
+            self._gids[i] = id
+
+    def set_snaps(self, snaps):
+        for i, snap in enumerate(snaps):
+            self._snaps[i] = snap
+
+    def set_hatches(self, hatches):
+        for i, hatch in enumerate(hatches):
+            self._hatches[i] = hatch
+
+    def set_hatch_colors(self, hatchcolors):
+        for i, hatchcolor in enumerate(hatchcolors):
+            self._hatchcolors[i] = hatchcolor
+
+    def set_hatch_linewidths(self, hatch_linewidths):
+        for i, hatch_linewidth in enumerate(hatch_linewidths):
+            self._hatch_linewidths[i] = hatch_linewidth
+
+    def set_sketches_params(self, scales=[None], lengths=[None], randomness=[None]):
+        if len(scales) == len(lengths) == len(randomness):
+            sketches = []
+            n = len(scales)
+            for i in range(n):
+                sketch = (
+                    None if scales[i] is None
+                    else (scales[i], lengths[i] or 128., randomness or 16.))
+                sketches.append(sketch)
+            self._sketches = sketches
+        else:
+            raise ValueError(
+                "Lengths of scales, lengths and randomness should be equal.")
 
 
 class TimerBase:
