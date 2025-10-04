@@ -1105,6 +1105,73 @@ class VectorizedGraphicsContextBase:
         self._snaps = [None]
         self._sketches = [None]
 
+    def get_alphas(self):
+        return self._alphas
+
+    def get_forced_alphas(self):
+        return self._forced_alphas
+
+    def get_antialiased(self):
+        return self._antialiaseds
+
+    def get_capstyles(self):
+        capstyles = []
+        for capstyle in self._capstyles:
+            capstyles.append(capstyle)
+        return capstyles
+
+    def get_clip_rectangle(self):
+        return self._cliprect
+
+    def get_clip_path(self):
+        if self._clippath is not None:
+            tpath, tr = self._clippath.get_transformed_path_and_affine()
+            if np.all(np.isfinite(tpath.vertices)):
+                return tpath, tr
+            else:
+                _log.warning("Ill-defined clip_path detected. Returning None.")
+                return None, None
+        return None, None
+
+    def get_dashes(self):
+        return self._dashes
+
+    def get_joinstyles(self):
+        joinstyles = []
+        for joinstyle in self._joinstyles:
+            joinstyles.append(joinstyle)
+        return joinstyles
+
+    def get_linewidths(self):
+        return self._linewidths
+
+    def get_edgecolors(self):
+        return self._edgecolors
+
+    def get_facecolors(self):
+        return self._facecolors
+
+    def get_hatches(self):
+        return self._hatches
+
+    def get_hatchcolors(self):
+        return self._hatchcolors
+
+    def get_hatch_linewidths(self):
+        return self._hatch_linewidths
+
+    def get_urls(self):
+        return self._urls
+
+    def get_gids(self):
+        return self._gids
+
+    def get_snaps(self):
+        return self._snaps
+
+    def get_sketches_params(self):
+        return self._sketches
+
 
 class TimerBase:
     """
