@@ -388,27 +388,31 @@ class RendererBase:
         Npaths = len(path_ids)
         Noffsets = len(offsets)
         N = max(Npaths, Noffsets)
-        Nfacecolors = len(vgc._facecolors)
-        Nedgecolors = len(vgc._edgecolors)
-        Nhatchcolors = len(vgc._hatchcolors)
-        Nlinewidths = len(vgc._linewidths)
-        Nlinestyles = len(vgc._linestyles)
-        Nurls = len(vgc._urls)
         Nalphas = len(vgc._alphas)
         Nforced_alphas = len(vgc._forced_alphas)
+        Nantialiaseds = len(vgc._antialiaseds)
         Ncapstyles = len(vgc._capstyles)
         Ndashes = len(vgc._dashes)
         Njoinstyles = len(vgc._joinstyles)
-        Nhatch_linewidths = len(vgc._hatch_linewidths)
-        Nsnaps = len(vgc._snaps)
-        Ngids = len(vgc._gids)
-        Nsketches = len(vgc._sketches)
+        Nlinestyles = len(vgc._linestyles)
+        Nlinewidths = len(vgc._linewidths)
+        Nedgecolors = len(vgc._edgecolors)
+        Nfacecolors = len(vgc._facecolors)
         Nhatches = len(vgc._hatches)
+        Nhatchcolors = len(vgc._hatchcolors)
+        Nhatch_linewidths = len(vgc._hatch_linewidths)
+        Nurls = len(vgc._urls)
+        Ngids = len(vgc._gids)
+        Nsnaps = len(vgc._snaps)
+        Nsketches = len(vgc._sketches)
+
+
 
         if (Nfacecolors == 0 and Nedgecolors == 0 and Nhatchcolors == 0) or Npaths == 0:
             return
 
         gc0 = self.new_gc()
+        gc0.set_clip_rectangle(vgc._cliprect)
 
         def cycle_or_default(seq, default=None):
             # Cycle over *seq* if it is not empty; else always yield *default*.
@@ -417,36 +421,49 @@ class RendererBase:
 
         pathids = cycle_or_default(path_ids)
         toffsets = cycle_or_default(offset_trans.transform(offsets), (0, 0))
-        facecolors = cycle_or_default(vgc._facecolors)
-        edgecolors = cycle_or_default(vgc._edgecolors)
-        hatchcolors = cycle_or_default(vgc._hatchcolors)
-        linewidths = cycle_or_default(vgc._linewidths)
-        linestyles = cycle_or_default(vgc._linestyles)
-        antialiaseds = cycle_or_default(vgc._antialiaseds)
-        urls = cycle_or_default(vgc._urls)
         alphas = cycle_or_default(vgc._alphas)
         forced_alphas = cycle_or_default(vgc._forced_alphas)
+        antialiaseds = cycle_or_default(vgc._antialiaseds)
         capstyles = cycle_or_default(vgc._capstyles)
         dashes = cycle_or_default(vgc._dashes)
         joinstyles = cycle_or_default(vgc._joinstyles)
-        hatch_linewidths = cycle_or_default(vgc._hatch_linewidths)
-        snaps = cycle_or_default(vgc._snaps)
-        gids = cycle_or_default(vgc._gids)
-        sketches = cycle_or_default(vgc._sketches)
+        linestyles = cycle_or_default(vgc._linestyles)
+        linewidths = cycle_or_default(vgc._linewidths)
+        edgecolors = cycle_or_default(vgc._edgecolors)
+        facecolors = cycle_or_default(vgc._facecolors)
         hatches = cycle_or_default(vgc._hatches)
+        hatchcolors = cycle_or_default(vgc._hatchcolors)
+        hatch_linewidths = cycle_or_default(vgc._hatch_linewidths)
+        urls = cycle_or_default(vgc._urls)
+        gids = cycle_or_default(vgc._gids)
+        snaps = cycle_or_default(vgc._snaps)
+        sketches = cycle_or_default(vgc._sketches)
 
         if Nedgecolors == 0:
             gc0.set_linewidth(0.0)
 
-        for (pathid, (xo, yo), facecolor, edgecolor, hatchcolor, linewidth, linestyle,
-             antialiased, url, alpha, forced_alpha, capstyle, dash,
-             joinstyle, hatch_linewidth, snap, gid, sketch, hatch) in itertools.islice(
-                zip(pathids, toffsets, facecolors, edgecolors, hatchcolors, linewidths,
-                    linestyles, antialiaseds, urls, alphas, forced_alphas, capstyles,
-                    dashes, joinstyles, hatch_linewidths, snaps, gids, sketches, hatches
-                    ,),N):
+        for (pathid, (xo, yo), alpha, forced_alpha, antialiased, capstyle, dash,
+             joinstyle, linestyle, linewidth, edgecolor, facecolor, hatch, hatchcolor,
+             hatch_linewidth, url, gid, snap, sketch,) in itertools.islice(
+                zip(pathids, toffsets, alphas, forced_alphas, antialiaseds, capstyles,
+                    dashes, joinstyles, linestyles, linewidths, edgecolors, facecolors,
+                    hatches, hatchcolors,hatch_linewidths, urls, gids, snaps, sketches,
+                    ),N):
             if not (np.isfinite(xo) and np.isfinite(yo)):
                 continue
+
+            if forced_alpha is False:
+                gc0.set_alpha(None)
+            elif Nalphas:
+                gc0.set_alpha(alpha)
+            if Nantialiaseds:
+                gc0.set_antialiased(antialiased)
+            if Ncapstyles:
+                gc0.set_capstyle(capstyle)
+            if Ndashes:
+                gc0.set_dashes(dash[0], dash[1])
+            if Njoinstyles:
+                gc0.set_joinstyle(joinstyle)
             if Nedgecolors:
                 if Nlinewidths:
                     gc0.set_linewidth(linewidth)
@@ -456,34 +473,23 @@ class RendererBase:
                     gc0.set_linewidth(0)
                 else:
                     gc0.set_foreground(edgecolor)
-            if Nhatchcolors:
-                gc0.set_hatch_color(hatchcolor)
             if facecolor is not None and len(facecolor) == 4 and facecolor[3] == 0:
                 facecolor = None
-            if forced_alpha is False:
-                gc0.set_alpha(None)
-            elif Nalphas:
-                gc0.set_alpha(alpha)
-            if Ncapstyles:
-                gc0.set_capstyle(capstyle)
-            if Ndashes:
-                gc0.set_dashes(dash[0], dash[1])
-            if Njoinstyles:
-                gc0.set_joinstyle(joinstyle)
+            if Nhatches:
+                gc0.set_hatch(hatch)
+            if Nhatchcolors:
+                gc0.set_hatch_color(hatchcolor)
             if Nhatch_linewidths:
                 gc0.set_hatch_linewidth(hatch_linewidth)
-            if Nsnaps:
-                gc0.set_snap(snap)
+            if Nurls:
+                gc0.set_url(url)
             if Ngids:
                 gc0.set_gid(gid)
+            if Nsnaps:
+                gc0.set_snap(snap)
             if Nsketches:
                 if sketch is not None:
                     gc0.set_sketch_params(sketch[0], sketch[1], sketch[2])
-            if Nhatches:
-                gc0.set_hatch(hatch)
-            gc0.set_antialiased(antialiased)
-            if Nurls:
-                gc0.set_url(url)
             yield xo, yo, pathid, gc0, facecolor
         gc0.restore()
 
