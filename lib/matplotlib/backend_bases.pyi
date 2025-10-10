@@ -75,7 +75,7 @@ class RendererBase:
         urls: str | Sequence[str] | None = ...,
         offset_position: Any = ...,
         *,
-        hatchcolors: ColorType | Sequence[ColorType] | None = None,
+        hatchcolors: ColorType | Sequence[ColorType] | None = ...,
     ) -> None: ...
     def draw_quad_mesh(
         self,
@@ -229,9 +229,9 @@ class VectorizedGraphicsContextBase:
     def set_hatch_linewidths(self, hatch_linewidths: list[float]) -> None: ...
     def set_sketches_params(
         self,
-        scales: list[float | None] = [None],
-        lengths: list[float | None] = [None],
-        randomness: list[float | None] = [None]
+        scales: list[float | None] = ...,
+        lengths: list[float | None] = ...,
+        randomness: list[float | None] = ...
     ) -> None: ...
 
 class TimerBase:
