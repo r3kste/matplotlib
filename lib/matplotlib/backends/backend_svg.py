@@ -16,7 +16,8 @@ from PIL import Image
 import matplotlib as mpl
 from matplotlib import cbook, font_manager as fm
 from matplotlib.backend_bases import (
-     _Backend, FigureCanvasBase, FigureManagerBase, RendererBase)
+     _Backend, FigureCanvasBase, FigureManagerBase, RendererBase, GraphicsContextBase,
+     VectorizedGraphicsContextBase)
 from matplotlib.backends.backend_mixed import MixedModeRenderer
 from matplotlib.colors import rgb2hex
 from matplotlib.dates import UTC
@@ -733,10 +734,10 @@ class RendererSVG(RendererBase):
             self.writer.end('a')
         writer.end('g')
 
-    def draw_path_collection(self, gc, master_transform, paths, all_transforms,
-                             offsets, offset_trans, facecolors, edgecolors,
-                             linewidths, linestyles, antialiaseds, urls,
-                             offset_position, *, hatchcolors=None):
+    def draw_path_collection(self, gc_or_vgc, master_transform, paths, all_transforms,
+                             offsets, offset_trans, facecolors=None, edgecolors=None,
+                             linewidths=None, linestyles=None, antialiaseds=None,
+                             urls=None, offset_position=None, *, hatchcolors=None):
         if hatchcolors is None:
             hatchcolors = []
         # Is the optimization worth it? Rough calculation:
@@ -749,12 +750,34 @@ class RendererSVG(RendererBase):
             paths, all_transforms, offsets, facecolors, edgecolors)
         should_do_optimization = \
             len_path + 9 * uses_per_path + 3 < (len_path + 5) * uses_per_path
+
+        if isinstance(gc_or_vgc, GraphicsContextBase):
+            vgc = VectorizedGraphicsContextBase()
+            vgc._alphas = [gc_or_vgc.get_alpha()]
+            vgc._forced_alphas = [gc_or_vgc.get_forced_alpha()]
+            vgc._antialiaseds = antialiaseds
+            vgc._capstyles = [gc_or_vgc.get_capstyle()]
+            vgc._cliprect = gc_or_vgc.get_clip_rectangle()
+            vgc._clippath = gc_or_vgc.get_clip_path()
+            vgc._joinstyles = [gc_or_vgc.get_joinstyle()]
+            vgc._linestyles = linestyles
+            vgc._linewidths = linewidths
+            vgc._edgecolors = edgecolors
+            vgc._facecolors = facecolors
+            vgc._hatches = [gc_or_vgc.get_hatch()]
+            vgc._hatchcolors = hatchcolors
+            vgc._hatch_linewidths = [gc_or_vgc.get_hatch_linewidth()]
+            vgc._urls = urls
+            vgc._gids = [gc_or_vgc.get_gid()]
+            vgc._snaps = [gc_or_vgc.get_snap()]
+            vgc._sketches = [gc_or_vgc.get_sketch_params()]
+        elif isinstance(gc_or_vgc, VectorizedGraphicsContextBase):
+            vgc = gc_or_vgc
+
         if not should_do_optimization:
             return super().draw_path_collection(
-                gc, master_transform, paths, all_transforms,
-                offsets, offset_trans, facecolors, edgecolors,
-                linewidths, linestyles, antialiaseds, urls,
-                offset_position, hatchcolors=hatchcolors)
+                vgc, master_transform, paths, all_transforms,
+                offsets, offset_trans)
 
         writer = self.writer
         path_codes = []
@@ -770,9 +793,7 @@ class RendererSVG(RendererBase):
         writer.end('defs')
 
         for xo, yo, path_id, gc0, rgbFace in self._iter_collection(
-                gc, path_codes, offsets, offset_trans,
-                facecolors, edgecolors, linewidths, linestyles,
-                antialiaseds, urls, offset_position, hatchcolors=hatchcolors):
+                vgc, path_codes, offsets, offset_trans):
             url = gc0.get_url()
             if url is not None:
                 writer.start('a', attrib={'xlink:href': url})
