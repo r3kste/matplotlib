@@ -410,7 +410,7 @@ class RendererBase:
             return
 
         gc = self.new_gc()
-        gc.set_clip_path(vgc._clippath)
+        gc.set_clip_path(vgc._clippath[0])
         gc.set_clip_rectangle(vgc._cliprect)
 
         def cycle_or_default(seq, default=None):

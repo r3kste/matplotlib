@@ -30,7 +30,7 @@ from matplotlib import _api, _text_helpers, _type1font, cbook, dviread
 from matplotlib._pylab_helpers import Gcf
 from matplotlib.backend_bases import (
     _Backend, FigureCanvasBase, FigureManagerBase, GraphicsContextBase,
-    RendererBase)
+    RendererBase, VectorizedGraphicsContextBase)
 from matplotlib.backends.backend_mixed import MixedModeRenderer
 from matplotlib.figure import Figure
 from matplotlib.font_manager import get_font, fontManager as _fontManager
@@ -2052,10 +2052,11 @@ class RendererPdf(_backend_pdf_ps.RendererPDFPSBase):
             gc.get_sketch_params())
         self.file.output(self.gc.paint())
 
-    def draw_path_collection(self, gc, master_transform, paths, all_transforms,
-                             offsets, offset_trans, facecolors, edgecolors,
-                             linewidths, linestyles, antialiaseds, urls,
-                             offset_position, *, hatchcolors=None):
+    def draw_path_collection(self, gc_or_vgc, master_transform, paths, all_transforms,
+                             offsets, offset_trans, facecolors=None, edgecolors=None,
+                             linewidths=None, linestyles=None, antialiaseds=None,
+                             urls=None,
+                             offset_position=None, *, hatchcolors=None):
         # We can only reuse the objects if the presence of fill and
         # stroke (and the amount of alpha for each) is the same for
         # all of them
@@ -2068,7 +2069,7 @@ class RendererPdf(_backend_pdf_ps.RendererPDFPSBase):
 
         if not len(facecolors):
             filled = False
-            can_do_optimization = not gc.get_hatch()
+            can_do_optimization = not gc_or_vgc.get_hatch()
         else:
             if np.all(facecolors[:, 3] == facecolors[0, 3]):
                 filled = facecolors[0, 3] != 0.0
@@ -2095,28 +2096,47 @@ class RendererPdf(_backend_pdf_ps.RendererPDFPSBase):
         should_do_optimization = \
             len_path + uses_per_path + 5 < len_path * uses_per_path
 
+        if isinstance(gc_or_vgc, GraphicsContextBase):
+            vgc = VectorizedGraphicsContextBase()
+            vgc._alphas = [gc_or_vgc.get_alpha()]
+            vgc._forced_alphas = [gc_or_vgc.get_forced_alpha()]
+            vgc._antialiaseds = antialiaseds
+            vgc._capstyles = [gc_or_vgc.get_capstyle()]
+            vgc._cliprect = gc_or_vgc.get_clip_rectangle()
+            vgc._clippath = gc_or_vgc.get_clip_path()
+            vgc._joinstyles = [gc_or_vgc.get_joinstyle()]
+            vgc._linestyles = linestyles
+            vgc._linewidths = linewidths
+            vgc._edgecolors = edgecolors
+            vgc._facecolors = facecolors
+            vgc._hatches = [gc_or_vgc.get_hatch()]
+            vgc._hatchcolors = hatchcolors
+            vgc._hatch_linewidths = [gc_or_vgc.get_hatch_linewidth()]
+            vgc._urls = urls
+            vgc._gids = [gc_or_vgc.get_gid()]
+            vgc._snaps = [gc_or_vgc.get_snap()]
+            vgc._sketches = [gc_or_vgc.get_sketch_params()]
+        elif isinstance(gc_or_vgc, VectorizedGraphicsContextBase):
+            vgc = gc_or_vgc
+
         if (not can_do_optimization) or (not should_do_optimization):
             return RendererBase.draw_path_collection(
-                self, gc, master_transform, paths, all_transforms,
-                offsets, offset_trans, facecolors, edgecolors,
-                linewidths, linestyles, antialiaseds, urls,
-                offset_position, hatchcolors=hatchcolors)
+                self, vgc, master_transform, paths, all_transforms,
+                offsets, offset_trans)
 
         padding = np.max(linewidths)
         path_codes = []
         for i, (path, transform) in enumerate(self._iter_collection_raw_paths(
                 master_transform, paths, all_transforms)):
             name = self.file.pathCollectionObject(
-                gc, path, transform, padding, filled, stroked)
+                vgc, path, transform, padding, filled, stroked)
             path_codes.append(name)
 
         output = self.file.output
         output(*self.gc.push())
         lastx, lasty = 0, 0
         for xo, yo, path_id, gc0, rgbFace in self._iter_collection(
-                gc, path_codes, offsets, offset_trans,
-                facecolors, edgecolors, linewidths, linestyles,
-                antialiaseds, urls, offset_position, hatchcolors=hatchcolors):
+                vgc, path_codes, offsets, offset_trans):
 
             self.check_gc(gc0, rgbFace)
             dx, dy = xo - lastx, yo - lasty
