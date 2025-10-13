@@ -2055,8 +2055,7 @@ class RendererPdf(_backend_pdf_ps.RendererPDFPSBase):
     def draw_path_collection(self, gc_or_vgc, master_transform, paths, all_transforms,
                              offsets, offset_trans, facecolors=None, edgecolors=None,
                              linewidths=None, linestyles=None, antialiaseds=None,
-                             urls=None,
-                             offset_position=None, *, hatchcolors=None):
+                             urls=None, offset_position=None, *, hatchcolors=None):
         # We can only reuse the objects if the presence of fill and
         # stroke (and the amount of alpha for each) is the same for
         # all of them
