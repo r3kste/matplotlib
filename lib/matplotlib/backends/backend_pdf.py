@@ -1871,11 +1871,11 @@ end"""
             self.output(Op.paint_path(fill, stroke))
             self.endStream()
 
-    def pathCollectionObject(self, gc, path, trans, padding, filled, stroked):
+    def pathCollectionObject(self, vgc, path, trans, padding, filled, stroked):
         name = Name('P%d' % len(self.paths))
         ob = self.reserveObject('path %d' % len(self.paths))
         self.paths.append(
-            (name, path, trans, ob, gc.get_joinstyle(), gc.get_capstyle(),
+            (name, path, trans, ob, vgc.get_joinstyle(), vgc.get_capstyle(),
              padding, filled, stroked))
         return name
 
@@ -2066,35 +2066,6 @@ class RendererPdf(_backend_pdf_ps.RendererPDFPSBase):
         if hatchcolors is None:
             hatchcolors = []
 
-        if not len(facecolors):
-            filled = False
-            can_do_optimization = not gc_or_vgc.get_hatch()
-        else:
-            if np.all(facecolors[:, 3] == facecolors[0, 3]):
-                filled = facecolors[0, 3] != 0.0
-            else:
-                can_do_optimization = False
-
-        if not len(edgecolors):
-            stroked = False
-        else:
-            if np.all(np.asarray(linewidths) == 0.0):
-                stroked = False
-            elif np.all(edgecolors[:, 3] == edgecolors[0, 3]):
-                stroked = edgecolors[0, 3] != 0.0
-            else:
-                can_do_optimization = False
-
-        # Is the optimization worth it? Rough calculation:
-        # cost of emitting a path in-line is len_path * uses_per_path
-        # cost of XObject is len_path + 5 for the definition,
-        #    uses_per_path for the uses
-        len_path = len(paths[0].vertices) if len(paths) > 0 else 0
-        uses_per_path = self._iter_collection_uses_per_path(
-            paths, all_transforms, offsets, facecolors, edgecolors)
-        should_do_optimization = \
-            len_path + uses_per_path + 5 < len_path * uses_per_path
-
         if isinstance(gc_or_vgc, GraphicsContextBase):
             vgc = VectorizedGraphicsContextBase()
             vgc._alphas = [gc_or_vgc.get_alpha()]
@@ -2117,6 +2088,35 @@ class RendererPdf(_backend_pdf_ps.RendererPDFPSBase):
             vgc._sketches = [gc_or_vgc.get_sketch_params()]
         elif isinstance(gc_or_vgc, VectorizedGraphicsContextBase):
             vgc = gc_or_vgc
+
+        if not len(facecolors):
+            filled = False
+            can_do_optimization = not vgc.get_hatch()
+        else:
+            if np.all(facecolors[:, 3] == facecolors[0, 3]):
+                filled = facecolors[0, 3] != 0.0
+            else:
+                can_do_optimization = False
+
+        if not len(edgecolors):
+            stroked = False
+        else:
+            if np.all(np.asarray(linewidths) == 0.0):
+                stroked = False
+            elif np.all(edgecolors[:, 3] == edgecolors[0, 3]):
+                stroked = edgecolors[0, 3] != 0.0
+            else:
+                can_do_optimization = False
+
+        # Is the optimization worth it? Rough calculation:
+        # cost of emitting a path in-line is len_path * uses_per_path
+        # cost of XObject is len_path + 5 for the definition,
+        #    uses_per_path for the uses
+        len_path = len(paths[0].vertices) if len(paths) > 0 else 0
+        uses_per_path = self._iter_collection_uses_per_path(
+            paths, all_transforms, offsets, vgc.get_facecolors(), vgc.get_edgecolors())
+        should_do_optimization = \
+            len_path + uses_per_path + 5 < len_path * uses_per_path
 
         if (not can_do_optimization) or (not should_do_optimization):
             return RendererBase.draw_path_collection(
