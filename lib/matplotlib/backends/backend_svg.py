@@ -740,16 +740,6 @@ class RendererSVG(RendererBase):
                              urls=None, offset_position=None, *, hatchcolors=None):
         if hatchcolors is None:
             hatchcolors = []
-        # Is the optimization worth it? Rough calculation:
-        # cost of emitting a path in-line is
-        #    (len_path + 5) * uses_per_path
-        # cost of definition+use is
-        #    (len_path + 3) + 9 * uses_per_path
-        len_path = len(paths[0].vertices) if len(paths) > 0 else 0
-        uses_per_path = self._iter_collection_uses_per_path(
-            paths, all_transforms, offsets, facecolors, edgecolors)
-        should_do_optimization = \
-            len_path + 9 * uses_per_path + 3 < (len_path + 5) * uses_per_path
 
         if isinstance(gc_or_vgc, GraphicsContextBase):
             vgc = VectorizedGraphicsContextBase()
@@ -773,6 +763,17 @@ class RendererSVG(RendererBase):
             vgc._sketches = [gc_or_vgc.get_sketch_params()]
         elif isinstance(gc_or_vgc, VectorizedGraphicsContextBase):
             vgc = gc_or_vgc
+
+        # Is the optimization worth it? Rough calculation:
+        # cost of emitting a path in-line is
+        #    (len_path + 5) * uses_per_path
+        # cost of definition+use is
+        #    (len_path + 3) + 9 * uses_per_path
+        len_path = len(paths[0].vertices) if len(paths) > 0 else 0
+        uses_per_path = self._iter_collection_uses_per_path(
+            paths, all_transforms, offsets, vgc.get_facecolors(), vgc.get_edgecolors())
+        should_do_optimization = \
+            len_path + 9 * uses_per_path + 3 < (len_path + 5) * uses_per_path
 
         if not should_do_optimization:
             return super().draw_path_collection(
