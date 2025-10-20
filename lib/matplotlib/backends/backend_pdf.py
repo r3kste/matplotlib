@@ -2056,15 +2056,6 @@ class RendererPdf(_backend_pdf_ps.RendererPDFPSBase):
                              offsets, offset_trans, facecolors=None, edgecolors=None,
                              linewidths=None, linestyles=None, antialiaseds=None,
                              urls=None, offset_position=None, *, hatchcolors=None):
-        # We can only reuse the objects if the presence of fill and
-        # stroke (and the amount of alpha for each) is the same for
-        # all of them
-        can_do_optimization = True
-        facecolors = np.asarray(facecolors)
-        edgecolors = np.asarray(edgecolors)
-
-        if hatchcolors is None:
-            hatchcolors = []
 
         if isinstance(gc_or_vgc, GraphicsContextBase):
             vgc = VectorizedGraphicsContextBase()
@@ -2088,6 +2079,13 @@ class RendererPdf(_backend_pdf_ps.RendererPDFPSBase):
             vgc._sketches = [gc_or_vgc.get_sketch_params()]
         elif isinstance(gc_or_vgc, VectorizedGraphicsContextBase):
             vgc = gc_or_vgc
+
+        # We can only reuse the objects if the presence of fill and
+        # stroke (and the amount of alpha for each) is the same for
+        # all of them
+        can_do_optimization = True
+        facecolors = np.asarray(vgc.get_facecolors())
+        edgecolors = np.asarray(vgc.get_edgecolors())
 
         if not len(facecolors):
             filled = False
