@@ -738,9 +738,6 @@ class RendererSVG(RendererBase):
                              offsets, offset_trans, facecolors=None, edgecolors=None,
                              linewidths=None, linestyles=None, antialiaseds=None,
                              urls=None, offset_position=None, *, hatchcolors=None):
-        if hatchcolors is None:
-            hatchcolors = []
-
         if isinstance(gc_or_vgc, GraphicsContextBase):
             vgc = VectorizedGraphicsContextBase()
             vgc._alphas = [gc_or_vgc.get_alpha()]
