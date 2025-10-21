@@ -124,6 +124,49 @@ class GCAgg
     GCAgg &operator=(const GCAgg &);
 };
 
+class VGCAgg
+{
+  public:
+    VGCAgg()
+    {
+    }
+    ~VGCAgg()
+    {
+    }
+
+    std::vector<double> alphas;
+    std::vector<bool> forced_alphas;
+    std::vector<bool> antialiaseds;
+    std::vector<double> linewidths;
+    std::vector<agg::rgba> edgecolors;
+    std::vector<agg::rgba> facecolors;
+
+    std::vector<agg::line_cap_e> capstyles;
+    std::vector<agg::line_join_e> joinstyles;
+
+    agg::rect_d cliprect;
+
+    ClipPath clippath;
+
+    std::vector<Dashes> dashes;
+
+    std::vector<std::string> hatches;
+    std::vector<agg::rgba> hatch_colors;
+    std::vector<double> hatch_linewidths;
+
+    std::vector<std::string> urls;
+    std::vector<std::string> gids;
+
+    std::vector<e_snap_mode> snap_modes;
+
+    std::vector<SketchParams> sketches;
+
+  private:
+    // prevent copying
+    VGCAgg(const VGCAgg &);
+    VGCAgg &operator=(const VGCAgg &);
+};
+
 namespace PYBIND11_NAMESPACE { namespace detail {
     template <> struct type_caster<agg::line_cap_e> {
     public:
@@ -248,6 +291,32 @@ namespace PYBIND11_NAMESPACE { namespace detail {
             value.sketch = src.attr("get_sketch_params")().cast<SketchParams>();
 
             return true;
+        }
+    };
+
+    template <> struct type_caster<VGCAgg> {
+    public:
+        PYBIND11_TYPE_CASTER(VGCAgg, const_name("VGCAgg"));
+
+        bool load(handle src, bool) {
+            value.alphas = src.attr("get_alphas")().cast<std::vector<double>>();
+            value.forced_alphas = src.attr("get_forced_alphas")().cast<std::vector<bool>>();
+            value.antialiaseds = src.attr("get_antialiaseds")().cast<std::vector<bool>>();
+            value.capstyles = src.attr("get_capstyles")().cast<std::vector<agg::line_cap_e>>();
+            value.dashes = src.attr("get_dashes")().cast<std::vector<Dashes>>();
+            value.joinstyles = src.attr("get_joinstyles")().cast<std::vector<agg::line_join_e>>();
+            value.linewidths = src.attr("get_linewidths")().cast<std::vector<double>>();
+            value.edgecolors = src.attr("get_edgecolors")().cast<std::vector<agg::rgba>>();
+            value.facecolors = src.attr("get_facecolors")().cast<std::vector<agg::rgba>>();
+            value.hatches = src.attr("get_hatches")().cast<std::vector<std::string>>();
+            value.hatch_colors = src.attr("get_hatch_colors")().cast<std::vector<agg::rgba>>();
+            value.hatch_linewidths = src.attr("get_hatch_linewidths")().cast<std::vector<double>>();
+            value.urls = src.attr("get_urls")().cast<std::vector<std::string>>();
+            value.gids = src.attr("get_gids")().cast<std::vector<std::string>>();
+            value.snap_modes = src.attr("get_snaps")().cast<std::vector<e_snap_mode>>();
+            value.sketches = src.attr("get_sketches_params")().cast<std::vector<SketchParams>>();
+            value.cliprect = src.attr("get_clip_rectangle")().cast<agg::rect_d>();
+            value.clippath = src.attr("get_clip_path")().cast<ClipPath>();
         }
     };
 }} // namespace PYBIND11_NAMESPACE::detail
