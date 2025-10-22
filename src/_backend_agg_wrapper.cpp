@@ -4,6 +4,7 @@
 #include "mplutils.h"
 #include "py_converters.h"
 #include "_backend_agg.h"
+#include "_backend_agg_basic_types.h"
 
 namespace py = pybind11;
 using namespace pybind11::literals;
@@ -172,6 +173,28 @@ PyRendererAgg_draw_path_collection(RendererAgg *self,
 }
 
 static void
+PyRendererAgg_draw_path_collection(RendererAgg *self,
+                                   VGCAgg &vgc,
+                                   agg::trans_affine master_transform,
+                                   mpl::PathGenerator paths,
+                                   py::array_t<double> transforms_obj,
+                                   py::array_t<double> offsets_obj,
+                                   agg::trans_affine offset_trans,
+                                   py::object Py_UNUSED(ignored_obj))
+{
+    auto transforms = convert_transforms(transforms_obj);
+    auto offsets = convert_points(offsets_obj);
+
+    self->draw_path_collection(vgc,
+            master_transform,
+            paths,
+            transforms,
+            offsets,
+            offset_trans
+        );
+}
+
+static void
 PyRendererAgg_draw_quad_mesh(RendererAgg *self,
                              GCAgg &gc,
                              agg::trans_affine master_transform,
@@ -229,11 +252,15 @@ PYBIND11_MODULE(_backend_agg, m, py::mod_gil_not_used())
              "image"_a, "x"_a, "y"_a, "angle"_a, "gc"_a)
         .def("draw_image", &PyRendererAgg_draw_image,
              "gc"_a, "x"_a, "y"_a, "image"_a)
-        .def("draw_path_collection", &PyRendererAgg_draw_path_collection,
-             "gc"_a, "master_transform"_a, "paths"_a, "transforms"_a, "offsets"_a,
-             "offset_trans"_a, "facecolors"_a, "edgecolors"_a, "linewidths"_a,
-             "dashes"_a, "antialiaseds"_a, "ignored"_a, "offset_position"_a,
+        .def("draw_path_collection", static_cast<void (*)(RendererAgg *, GCAgg &, agg::trans_affine, mpl::PathGenerator, py::array_t<double>, py::array_t<double>, agg::trans_affine, py::array_t<double>, py::array_t<double>, py::array_t<double>, DashesVector, py::array_t<uint8_t>, py::object, py::object, py::array_t<double>)>(&PyRendererAgg_draw_path_collection),
+             "gc_or_vgc"_a, "master_transform"_a, "paths"_a, "transforms"_a, "offsets"_a,
+             "offset_trans"_a, "facecolors"_a = py::array_t<double>().reshape({0,4}), "edgecolors"_a = py::array_t<double>().reshape({0,4}), "linewidths"_a = py::array_t<double>(),
+             "dashes"_a = py::array_t<double>(), "antialiaseds"_a = py::array_t<uint8_t>(), "ignored"_a = py::array_t<double>(), "offset_position"_a = py::array_t<double>(),
              py::kw_only(), "hatchcolors"_a = py::array_t<double>().reshape({0, 4}))
+        .def("draw_path_collection", static_cast<void (*)(RendererAgg *, VGCAgg &, agg::trans_affine, mpl::PathGenerator, py::array_t<double>, py::array_t<double>, agg::trans_affine, py::object)>(&PyRendererAgg_draw_path_collection),
+             "gc_or_vgc"_a, "master_transform"_a, "paths"_a, "transforms"_a, "offsets"_a,
+             "offset_trans"_a,"ignored"_a = py::array_t<double>()
+            )
         .def("draw_quad_mesh", &PyRendererAgg_draw_quad_mesh,
              "gc"_a, "master_transform"_a, "mesh_width"_a, "mesh_height"_a,
              "coordinates"_a, "offsets"_a, "offset_trans"_a, "facecolors"_a,
