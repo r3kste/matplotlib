@@ -177,6 +177,16 @@ class RendererAgg
                               AntialiasedArray &antialiaseds,
                               ColorArray &hatchcolors);
 
+    template <class PathGenerator,
+              class TransformArray,
+              class OffsetArray>
+    void draw_path_collection(VGCAgg &vgc,
+                              agg::trans_affine &master_transform,
+                              PathGenerator &path,
+                              TransformArray &transforms,
+                              OffsetArray &offsets,
+                              agg::trans_affine &offset_trans);
+
     template <class CoordinateArray, class OffsetArray, class ColorArray>
     void draw_quad_mesh(GCAgg &gc,
                         agg::trans_affine &master_transform,
@@ -251,27 +261,15 @@ class RendererAgg
     template <class PathIterator,
               class PathGenerator,
               class TransformArray,
-              class OffsetArray,
-              class ColorArray,
-              class LineWidthArray,
-              class AntialiasedArray>
-    void _draw_path_collection_generic(GCAgg &gc,
+              class OffsetArray>
+    void _draw_path_collection_generic(VGCAgg &vgc,
                                        agg::trans_affine master_transform,
-                                       const agg::rect_d &cliprect,
-                                       PathIterator &clippath,
-                                       const agg::trans_affine &clippath_trans,
                                        PathGenerator &path_generator,
                                        TransformArray &transforms,
                                        OffsetArray &offsets,
                                        const agg::trans_affine &offset_trans,
-                                       ColorArray &facecolors,
-                                       ColorArray &edgecolors,
-                                       LineWidthArray &linewidths,
-                                       DashesVector &linestyles,
-                                       AntialiasedArray &antialiaseds,
                                        bool check_snap,
-                                       bool has_codes,
-                                       ColorArray &hatchcolors);
+                                       bool has_codes);
 
     template <class PointArray, class ColorArray>
     void _draw_gouraud_triangle(PointArray &points,
@@ -887,23 +885,14 @@ template <class PathIterator,
           class ColorArray,
           class LineWidthArray,
           class AntialiasedArray>
-inline void RendererAgg::_draw_path_collection_generic(GCAgg &gc,
+inline void RendererAgg::_draw_path_collection_generic(VGCAgg &vgc,
                                                        agg::trans_affine master_transform,
-                                                       const agg::rect_d &cliprect,
-                                                       PathIterator &clippath,
-                                                       const agg::trans_affine &clippath_trans,
                                                        PathGenerator &path_generator,
                                                        TransformArray &transforms,
                                                        OffsetArray &offsets,
                                                        const agg::trans_affine &offset_trans,
-                                                       ColorArray &facecolors,
-                                                       ColorArray &edgecolors,
-                                                       LineWidthArray &linewidths,
-                                                       DashesVector &linestyles,
-                                                       AntialiasedArray &antialiaseds,
                                                        bool check_snap,
-                                                       bool has_codes,
-                                                       ColorArray &hatchcolors)
+                                                       bool has_codes)
 {
     typedef agg::conv_transform<typename PathGenerator::path_iterator> transformed_path_t;
     typedef PathNanRemover<transformed_path_t> nan_removed_t;
@@ -921,12 +910,20 @@ inline void RendererAgg::_draw_path_collection_generic(GCAgg &gc,
     size_t N = std::max(Npaths, Noffsets);
 
     size_t Ntransforms = safe_first_shape(transforms);
-    size_t Nfacecolors = safe_first_shape(facecolors);
-    size_t Nedgecolors = safe_first_shape(edgecolors);
-    size_t Nhatchcolors = safe_first_shape(hatchcolors);
-    size_t Nlinewidths = safe_first_shape(linewidths);
-    size_t Nlinestyles = std::min(linestyles.size(), N);
-    size_t Naa = safe_first_shape(antialiaseds);
+    size_t Nalphas = safe_first_shape(vgc.alphas);
+    size_t Nforced_alphas = safe_first_shape(vgc.forced_alphas);
+    size_t Naa = safe_first_shape(vgc.antialiaseds);
+    size_t Ncapstyles = safe_first_shape(vgc.capstyles);
+    size_t Ndashes = safe_first_shape(vgc.dashes);
+    size_t Njoinstyles = safe_first_shape(vgc.joinstyles);
+    size_t Nlinewidths = safe_first_shape(vgc.linewidths);
+    size_t Nedgecolors = safe_first_shape(vgc.edgecolors);
+    size_t Nfacecolors = safe_first_shape(vgc.facecolors);
+    size_t Nhatches = safe_first_shape(vgc.hatches);
+    size_t Nhatchcolors = safe_first_shape(vgc.hatchcolors);
+    size_t Nhatch_linewidths = safe_first_shape(vgc.hatch_linewidths);
+    size_t Nsnap_modes = safe_first_shape(vgc.snap_modes);
+    size_t Nsketches = safe_first_shape(vgc.sketches);
 
     if ((Nfacecolors == 0 && Nedgecolors == 0 && Nhatchcolors == 0) || Npaths == 0) {
         return;
@@ -935,17 +932,16 @@ inline void RendererAgg::_draw_path_collection_generic(GCAgg &gc,
     // Handle any clipping globally
     theRasterizer.reset_clipping();
     rendererBase.reset_clipping(true);
-    set_clipbox(cliprect, theRasterizer);
-    bool has_clippath = render_clippath(clippath, clippath_trans, gc.snap_mode);
-
-    // Set some defaults, assuming no face or edge
-    gc.linewidth = 0.0;
-    std::optional<agg::rgba> face;
-    agg::trans_affine trans;
-    bool do_clip = Nfacecolors == 0 && !gc.has_hatchpath();
+    set_clipbox(vgc.cliprect, theRasterizer);
 
     for (int i = 0; i < (int)N; ++i) {
         typename PathGenerator::path_iterator path = path_generator(i);
+
+        GCAgg gc;
+        gc.linewidth = 0.0;
+        std::optional<agg::rgba> face;
+        agg::trans_affine trans;
+        // Set some defaults, assuming no face or edge
 
         if (Ntransforms) {
             int it = i % Ntransforms;
@@ -966,36 +962,61 @@ inline void RendererAgg::_draw_path_collection_generic(GCAgg &gc,
             offset_trans.transform(&xo, &yo);
             trans *= agg::trans_affine_translation(xo, yo);
         }
-
         // These transformations must be done post-offsets
         trans *= agg::trans_affine_scaling(1.0, -1.0);
         trans *= agg::trans_affine_translation(0.0, (double)height);
 
-        if (Nfacecolors) {
-            int ic = i % Nfacecolors;
-            face.emplace(facecolors(ic, 0), facecolors(ic, 1), facecolors(ic, 2), facecolors(ic, 3));
+        if(Nalphas){
+            int ic = i % Nalphas;
+            gc.alpha = vgc.alphas[ic];
         }
-
+        if(Nforced_alphas){
+            int ic = i % Nforced_alphas;
+            gc.forced_alpha = vgc.forced_alphas[ic];
+        }
+        if(Naa){
+            gc.isaa = vgc.antialiaseds[i % Naa];
+        }
         if (Nedgecolors) {
             int ic = i % Nedgecolors;
-            gc.color = agg::rgba(edgecolors(ic, 0), edgecolors(ic, 1), edgecolors(ic, 2), edgecolors(ic, 3));
+            gc.color = agg::rgba((vgc.edgecolors[ic]).r, (vgc.edgecolors[ic]).g, (vgc.edgecolors[ic]).b, (vgc.edgecolors[ic]).a);
 
             if (Nlinewidths) {
-                gc.linewidth = linewidths(i % Nlinewidths);
+                gc.linewidth = vgc.linewidths[i % Nlinewidths];
             } else {
                 gc.linewidth = 1.0;
             }
-            if (Nlinestyles) {
-                gc.dashes = linestyles[i % Nlinestyles];
+            if (Ndashes) {
+                gc.dashes = vgc.dashes[i % Ndashes];
             }
         }
-
+        if (Nfacecolors) {
+            int ic = i % Nfacecolors;
+            face.emplace((vgc.facecolors[ic]).r, (vgc.facecolors[ic]).g, (vgc.facecolors[ic]).b, (vgc.facecolors[ic]).a);
+        }
+        if(Ncapstyles){
+            gc.cap = vgc.capstyles[i % Ncapstyles];
+        }
+        if(Njoinstyles){
+            gc.join = vgc.joinstyles[i % Njoinstyles];
+        }
         if(Nhatchcolors) {
             int ic = i % Nhatchcolors;
-            gc.hatch_color = agg::rgba(hatchcolors(ic, 0), hatchcolors(ic, 1), hatchcolors(ic, 2), hatchcolors(ic, 3));
+            gc.hatch_color = agg::rgba((vgc.hatch_colors[ic]).r, (vgc.hatch_colors[ic]).g, (vgc.hatch_colors[ic]).b, (vgc.hatch_colors[ic]).a);
         }
-
-        gc.isaa = antialiaseds(i % Naa);
+        if(Nhatch_linewidths){
+            gc.hatch_linewidth = vgc.hatch_linewidths[i % Nhatch_linewidths];
+        }
+        if(Nsnap_modes){
+            gc.snap_mode = vgc.snap_modes[i % Nsnap_modes];
+        }
+        if(Nsketches){
+            gc.sketch = vgc.sketches[i % Nsketches];
+        }
+        gc.clippath = vgc.clippath;
+        gc.cliprect = vgc.cliprect;
+        bool has_clippath = render_clippath((gc.clippath).path, (gc.clippath).trans, gc.snap_mode);
+        bool do_clip = Nfacecolors == 0 && !gc.has_hatchpath();
         transformed_path_t tpath(path, trans);
         nan_removed_t nan_removed(tpath, true, has_codes);
         clipped_t clipped(nan_removed, do_clip, width, height);
@@ -1042,25 +1063,51 @@ inline void RendererAgg::draw_path_collection(GCAgg &gc,
                                               AntialiasedArray &antialiaseds,
                                               ColorArray &hatchcolors)
 {
-    _draw_path_collection_generic(gc,
+    VGCAgg vgc;
+    vgc.alphas.push_back(gc.alpha);
+    vgc.forced_alphas.push_back(gc.forced_alpha);
+    vgc.antialiaseds = antialiaseds;
+    vgc.linewidths = linewidths;
+    vgc.edgecolors = edgecolors;
+    vgc.facecolors = facecolors;
+    vgc.capstyles.push_back(gc.cap);
+    vgc.joinstyles.push_back(gc.join);
+    vgc.clippath = gc.clippath;
+    vgc.cliprect = gc.cliprect;
+    vgc.dashes = linestyles;
+    vgc.hatch_colors = hatchcolors;
+    vgc.hatch_linewidths.push_back(gc.hatch_linewidth);
+    vgc.snap_modes.push_back(gc.snap_mode);
+    vgc.sketches.push_back(gc.sketch);
+
+    _draw_path_collection_generic(vgc,
                                   master_transform,
-                                  gc.cliprect,
-                                  gc.clippath.path,
-                                  gc.clippath.trans,
                                   path,
                                   transforms,
                                   offsets,
                                   offset_trans,
-                                  facecolors,
-                                  edgecolors,
-                                  linewidths,
-                                  linestyles,
-                                  antialiaseds,
                                   true,
-                                  true,
-                                  hatchcolors);
+                                  true);
 }
-
+template <class PathGenerator,
+          class TransformArray,
+          class OffsetArray>
+inline void RendererAgg::draw_path_collection(VGCAgg &vgc,
+                                              agg::trans_affine &master_transform,
+                                              PathGenerator &path,
+                                              TransformArray &transforms,
+                                              OffsetArray &offsets,
+                                              agg::trans_affine &offset_trans)
+{
+    _draw_path_collection_generic(vgc,
+                                  master_transform,
+                                  path,
+                                  transforms,
+                                  offsets,
+                                  offset_trans,
+                                  true,
+                                  true);
+}
 template <class CoordinateArray>
 class QuadMeshGenerator
 {
@@ -1154,23 +1201,31 @@ inline void RendererAgg::draw_quad_mesh(GCAgg &gc,
     DashesVector linestyles;
     ColorArray hatchcolors = py::array_t<double>().reshape({0, 4}).unchecked<double, 2>();
 
-    _draw_path_collection_generic(gc,
+    VGCAgg vgc;
+    vgc.alphas.push_back(gc.alpha);
+    vgc.forced_alphas.push_back(gc.forced_alpha);
+    vgc.antialiaseds = antialiaseds;
+    vgc.linewidths = linewidths;
+    vgc.edgecolors = edgecolors;
+    vgc.facecolors = facecolors;
+    vgc.capstyles.push_back(gc.cap);
+    vgc.joinstyles.push_back(gc.join);
+    vgc.clippath = gc.clippath;
+    vgc.cliprect = gc.cliprect;
+    vgc.dashes = linestyles;
+    vgc.hatch_colors = hatchcolors;
+    vgc.hatch_linewidths.push_back(gc.hatch_linewidth);
+    vgc.snap_modes.push_back(gc.snap_mode);
+    vgc.sketches.push_back(gc.sketch);
+
+    _draw_path_collection_generic(vgc,
                                   master_transform,
-                                  gc.cliprect,
-                                  gc.clippath.path,
-                                  gc.clippath.trans,
                                   path_generator,
                                   transforms,
                                   offsets,
                                   offset_trans,
-                                  facecolors,
-                                  edgecolors,
-                                  linewidths,
-                                  linestyles,
-                                  antialiaseds,
                                   true, // check_snap
-                                  false,
-                                  hatchcolors);
+                                  false);
 }
 
 template <class PointArray, class ColorArray>
