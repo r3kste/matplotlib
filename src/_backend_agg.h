@@ -258,8 +258,7 @@ class RendererAgg
     template <class PathIteratorType>
     void _draw_path(PathIteratorType &path, bool has_clippath, const std::optional<agg::rgba> &face, GCAgg &gc);
 
-    template <class PathIterator,
-              class PathGenerator,
+    template <class PathGenerator,
               class TransformArray,
               class OffsetArray>
     void _draw_path_collection_generic(VGCAgg &vgc,
@@ -878,13 +877,9 @@ inline void RendererAgg::draw_image(GCAgg &gc,
     rendererBase.reset_clipping(true);
 }
 
-template <class PathIterator,
-          class PathGenerator,
+template <class PathGenerator,
           class TransformArray,
-          class OffsetArray,
-          class ColorArray,
-          class LineWidthArray,
-          class AntialiasedArray>
+          class OffsetArray>
 inline void RendererAgg::_draw_path_collection_generic(VGCAgg &vgc,
                                                        agg::trans_affine master_transform,
                                                        PathGenerator &path_generator,
@@ -910,20 +905,20 @@ inline void RendererAgg::_draw_path_collection_generic(VGCAgg &vgc,
     size_t N = std::max(Npaths, Noffsets);
 
     size_t Ntransforms = safe_first_shape(transforms);
-    size_t Nalphas = safe_first_shape(vgc.alphas);
-    size_t Nforced_alphas = safe_first_shape(vgc.forced_alphas);
-    size_t Naa = safe_first_shape(vgc.antialiaseds);
-    size_t Ncapstyles = safe_first_shape(vgc.capstyles);
-    size_t Ndashes = safe_first_shape(vgc.dashes);
-    size_t Njoinstyles = safe_first_shape(vgc.joinstyles);
-    size_t Nlinewidths = safe_first_shape(vgc.linewidths);
-    size_t Nedgecolors = safe_first_shape(vgc.edgecolors);
-    size_t Nfacecolors = safe_first_shape(vgc.facecolors);
-    size_t Nhatches = safe_first_shape(vgc.hatches);
-    size_t Nhatchcolors = safe_first_shape(vgc.hatchcolors);
-    size_t Nhatch_linewidths = safe_first_shape(vgc.hatch_linewidths);
-    size_t Nsnap_modes = safe_first_shape(vgc.snap_modes);
-    size_t Nsketches = safe_first_shape(vgc.sketches);
+    size_t Nalphas = vgc.alphas.size();
+    size_t Nforced_alphas = vgc.forced_alphas.size();
+    size_t Naa = vgc.antialiaseds.size();
+    size_t Ncapstyles = vgc.capstyles.size();
+    size_t Ndashes = vgc.dashes.size();
+    size_t Njoinstyles = vgc.joinstyles.size();
+    size_t Nlinewidths = vgc.linewidths.size();
+    size_t Nedgecolors = vgc.edgecolors.size();
+    size_t Nfacecolors = vgc.facecolors.size();
+    size_t Nhatches = vgc.hatches.size();
+    size_t Nhatchcolors = vgc.hatch_colors.size();
+    size_t Nhatch_linewidths = vgc.hatch_linewidths.size();
+    size_t Nsnap_modes = vgc.snap_modes.size();
+    size_t Nsketches = vgc.sketches.size();
 
     if ((Nfacecolors == 0 && Nedgecolors == 0 && Nhatchcolors == 0) || Npaths == 0) {
         return;
@@ -1066,16 +1061,31 @@ inline void RendererAgg::draw_path_collection(GCAgg &gc,
     VGCAgg vgc;
     vgc.alphas.push_back(gc.alpha);
     vgc.forced_alphas.push_back(gc.forced_alpha);
-    vgc.antialiaseds = antialiaseds;
-    vgc.linewidths = linewidths;
-    vgc.edgecolors = edgecolors;
-    vgc.facecolors = facecolors;
+    vgc.antialiaseds.clear();
+    for (ssize_t i = 0; i < antialiaseds.shape(0); ++i) {
+        vgc.antialiaseds.push_back(static_cast<bool>(antialiaseds(i)));
+    }
+    vgc.linewidths.clear();
+    for (ssize_t i = 0; i < linewidths.shape(0); ++i) {
+        vgc.linewidths.push_back(linewidths(i));
+    }
+    vgc.edgecolors.clear();
+    for (ssize_t i = 0; i < edgecolors.shape(0); ++i) {
+        vgc.edgecolors.emplace_back(edgecolors(i, 0), edgecolors(i, 1), edgecolors(i, 2), edgecolors(i, 3));
+    }
+    vgc.facecolors.clear();
+    for (ssize_t i = 0; i < facecolors.shape(0); ++i) {
+        vgc.facecolors.emplace_back(facecolors(i, 0), facecolors(i, 1), facecolors(i, 2), facecolors(i, 3));
+    }
     vgc.capstyles.push_back(gc.cap);
     vgc.joinstyles.push_back(gc.join);
     vgc.clippath = gc.clippath;
     vgc.cliprect = gc.cliprect;
     vgc.dashes = linestyles;
-    vgc.hatch_colors = hatchcolors;
+    vgc.hatch_colors.clear();
+    for (ssize_t i = 0; i < hatchcolors.shape(0); ++i) {
+        vgc.hatch_colors.emplace_back(hatchcolors(i, 0), hatchcolors(i, 1), hatchcolors(i, 2), hatchcolors(i, 3));
+    }
     vgc.hatch_linewidths.push_back(gc.hatch_linewidth);
     vgc.snap_modes.push_back(gc.snap_mode);
     vgc.sketches.push_back(gc.sketch);
@@ -1204,16 +1214,31 @@ inline void RendererAgg::draw_quad_mesh(GCAgg &gc,
     VGCAgg vgc;
     vgc.alphas.push_back(gc.alpha);
     vgc.forced_alphas.push_back(gc.forced_alpha);
-    vgc.antialiaseds = antialiaseds;
-    vgc.linewidths = linewidths;
-    vgc.edgecolors = edgecolors;
-    vgc.facecolors = facecolors;
+    vgc.antialiaseds.clear();
+    for (ssize_t i = 0; i < antialiaseds.shape(0); ++i) {
+        vgc.antialiaseds.push_back(static_cast<bool>(antialiaseds(i)));
+    }
+    vgc.linewidths.clear();
+    for (ssize_t i = 0; i < linewidths.shape(0); ++i) {
+        vgc.linewidths.push_back(linewidths(i));
+    }
+    vgc.edgecolors.clear();
+    for (ssize_t i = 0; i < edgecolors.shape(0); ++i) {
+        vgc.edgecolors.emplace_back(edgecolors(i, 0), edgecolors(i, 1), edgecolors(i, 2), edgecolors(i, 3));
+    }
+    vgc.facecolors.clear();
+    for (ssize_t i = 0; i < facecolors.shape(0); ++i) {
+        vgc.facecolors.emplace_back(facecolors(i, 0), facecolors(i, 1), facecolors(i, 2), facecolors(i, 3));
+    }
     vgc.capstyles.push_back(gc.cap);
     vgc.joinstyles.push_back(gc.join);
     vgc.clippath = gc.clippath;
     vgc.cliprect = gc.cliprect;
     vgc.dashes = linestyles;
-    vgc.hatch_colors = hatchcolors;
+    vgc.hatch_colors.clear();
+    for (ssize_t i = 0; i < hatchcolors.shape(0); ++i) {
+        vgc.hatch_colors.emplace_back(hatchcolors(i, 0), hatchcolors(i, 1), hatchcolors(i, 2), hatchcolors(i, 3));
+    }
     vgc.hatch_linewidths.push_back(gc.hatch_linewidth);
     vgc.snap_modes.push_back(gc.snap_mode);
     vgc.sketches.push_back(gc.sketch);
