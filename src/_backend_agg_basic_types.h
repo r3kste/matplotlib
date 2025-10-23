@@ -317,6 +317,8 @@ namespace PYBIND11_NAMESPACE { namespace detail {
             value.sketches = src.attr("get_sketches_params")().cast<std::vector<SketchParams>>();
             value.cliprect = src.attr("get_clip_rectangle")().cast<agg::rect_d>();
             value.clippath = src.attr("get_clip_path")().cast<ClipPath>();
+            
+            return true;
         }
     };
 }} // namespace PYBIND11_NAMESPACE::detail
