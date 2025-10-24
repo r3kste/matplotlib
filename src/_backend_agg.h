@@ -42,6 +42,7 @@
 
 #include "_backend_agg_basic_types.h"
 #include "path_converters.h"
+#include "py_converters.h"
 #include "array.h"
 #include "agg_workaround.h"
 
@@ -904,6 +905,10 @@ inline void RendererAgg::_draw_path_collection_generic(VGCAgg &vgc,
     size_t Noffsets = safe_first_shape(offsets);
     size_t N = std::max(Npaths, Noffsets);
 
+    auto facecolors = convert_colors(vgc.facecolors);
+    auto edgecolors = convert_colors(vgc.edgecolors);
+    auto hatch_colors = convert_colors(vgc.hatch_colors);
+
     size_t Ntransforms = safe_first_shape(transforms);
     size_t Nalphas = vgc.alphas.size();
     size_t Nforced_alphas = vgc.forced_alphas.size();
@@ -912,10 +917,10 @@ inline void RendererAgg::_draw_path_collection_generic(VGCAgg &vgc,
     size_t Ndashes = vgc.dashes.size();
     size_t Njoinstyles = vgc.joinstyles.size();
     size_t Nlinewidths = vgc.linewidths.size();
-    size_t Nedgecolors = vgc.edgecolors.size();
-    size_t Nfacecolors = vgc.facecolors.size();
-    size_t Nhatches = vgc.hatches.size();
-    size_t Nhatchcolors = vgc.hatch_colors.size();
+    size_t Nedgecolors = safe_first_shape(edgecolors);
+    size_t Nfacecolors = safe_first_shape(facecolors);
+    size_t Nhatchpaths = vgc.hatchpaths.size();
+    size_t Nhatchcolors = safe_first_shape(hatch_colors);
     size_t Nhatch_linewidths = vgc.hatch_linewidths.size();
     size_t Nsnap_modes = vgc.snap_modes.size();
     size_t Nsketches = vgc.sketches.size();
@@ -929,14 +934,15 @@ inline void RendererAgg::_draw_path_collection_generic(VGCAgg &vgc,
     rendererBase.reset_clipping(true);
     set_clipbox(vgc.cliprect, theRasterizer);
 
+    // Set some defaults, assuming no face or edge
+    GCAgg gc;
+    gc.linewidth = 0.0;
+    std::optional<agg::rgba> face;
+    agg::trans_affine trans;
+
     for (int i = 0; i < (int)N; ++i) {
         typename PathGenerator::path_iterator path = path_generator(i);
 
-        GCAgg gc;
-        gc.linewidth = 0.0;
-        std::optional<agg::rgba> face;
-        agg::trans_affine trans;
-        // Set some defaults, assuming no face or edge
 
         if (Ntransforms) {
             int it = i % Ntransforms;
@@ -974,7 +980,7 @@ inline void RendererAgg::_draw_path_collection_generic(VGCAgg &vgc,
         }
         if (Nedgecolors) {
             int ic = i % Nedgecolors;
-            gc.color = agg::rgba((vgc.edgecolors[ic]).r, (vgc.edgecolors[ic]).g, (vgc.edgecolors[ic]).b, (vgc.edgecolors[ic]).a);
+            gc.color = agg::rgba(edgecolors(ic, 0), edgecolors(ic, 1), edgecolors(ic, 2), edgecolors(ic, 3));
 
             if (Nlinewidths) {
                 gc.linewidth = vgc.linewidths[i % Nlinewidths];
@@ -987,7 +993,7 @@ inline void RendererAgg::_draw_path_collection_generic(VGCAgg &vgc,
         }
         if (Nfacecolors) {
             int ic = i % Nfacecolors;
-            face.emplace((vgc.facecolors[ic]).r, (vgc.facecolors[ic]).g, (vgc.facecolors[ic]).b, (vgc.facecolors[ic]).a);
+            face.emplace(facecolors(ic, 0), facecolors(ic, 1), facecolors(ic, 2), facecolors(ic, 3));
         }
         if(Ncapstyles){
             gc.cap = vgc.capstyles[i % Ncapstyles];
@@ -995,9 +1001,13 @@ inline void RendererAgg::_draw_path_collection_generic(VGCAgg &vgc,
         if(Njoinstyles){
             gc.join = vgc.joinstyles[i % Njoinstyles];
         }
+        if (Nhatchpaths) {
+            int ic = i % Nhatchpaths;
+            gc.hatchpath = vgc.hatchpaths[ic];
+        }
         if(Nhatchcolors) {
             int ic = i % Nhatchcolors;
-            gc.hatch_color = agg::rgba((vgc.hatch_colors[ic]).r, (vgc.hatch_colors[ic]).g, (vgc.hatch_colors[ic]).b, (vgc.hatch_colors[ic]).a);
+            gc.hatch_color = agg::rgba(hatch_colors(ic, 0), hatch_colors(ic, 1), hatch_colors(ic, 2), hatch_colors(ic, 3));
         }
         if(Nhatch_linewidths){
             gc.hatch_linewidth = vgc.hatch_linewidths[i % Nhatch_linewidths];
@@ -1008,6 +1018,7 @@ inline void RendererAgg::_draw_path_collection_generic(VGCAgg &vgc,
         if(Nsketches){
             gc.sketch = vgc.sketches[i % Nsketches];
         }
+
         gc.clippath = vgc.clippath;
         gc.cliprect = vgc.cliprect;
         bool has_clippath = render_clippath((gc.clippath).path, (gc.clippath).trans, gc.snap_mode);
@@ -1059,8 +1070,9 @@ inline void RendererAgg::draw_path_collection(GCAgg &gc,
                                               ColorArray &hatchcolors)
 {
     VGCAgg vgc;
-    vgc.alphas.push_back(gc.alpha);
-    vgc.forced_alphas.push_back(gc.forced_alpha);
+
+    vgc.alphas = {gc.alpha};
+    vgc.forced_alphas = {gc.forced_alpha};
     vgc.antialiaseds.clear();
     for (ssize_t i = 0; i < antialiaseds.shape(0); ++i) {
         vgc.antialiaseds.push_back(static_cast<bool>(antialiaseds(i)));
@@ -1069,26 +1081,18 @@ inline void RendererAgg::draw_path_collection(GCAgg &gc,
     for (ssize_t i = 0; i < linewidths.shape(0); ++i) {
         vgc.linewidths.push_back(linewidths(i));
     }
-    vgc.edgecolors.clear();
-    for (ssize_t i = 0; i < edgecolors.shape(0); ++i) {
-        vgc.edgecolors.emplace_back(edgecolors(i, 0), edgecolors(i, 1), edgecolors(i, 2), edgecolors(i, 3));
-    }
-    vgc.facecolors.clear();
-    for (ssize_t i = 0; i < facecolors.shape(0); ++i) {
-        vgc.facecolors.emplace_back(facecolors(i, 0), facecolors(i, 1), facecolors(i, 2), facecolors(i, 3));
-    }
-    vgc.capstyles.push_back(gc.cap);
-    vgc.joinstyles.push_back(gc.join);
+    vgc.edgecolors = edgecolors;
+    vgc.facecolors = facecolors;
+    vgc.capstyles = {gc.cap};
+    vgc.joinstyles = {gc.join};
     vgc.clippath = gc.clippath;
     vgc.cliprect = gc.cliprect;
     vgc.dashes = linestyles;
-    vgc.hatch_colors.clear();
-    for (ssize_t i = 0; i < hatchcolors.shape(0); ++i) {
-        vgc.hatch_colors.emplace_back(hatchcolors(i, 0), hatchcolors(i, 1), hatchcolors(i, 2), hatchcolors(i, 3));
-    }
-    vgc.hatch_linewidths.push_back(gc.hatch_linewidth);
-    vgc.snap_modes.push_back(gc.snap_mode);
-    vgc.sketches.push_back(gc.sketch);
+    vgc.hatchpaths = {gc.hatchpath};
+    vgc.hatch_colors = hatchcolors;
+    vgc.hatch_linewidths = {gc.hatch_linewidth};
+    vgc.snap_modes = {gc.snap_mode};
+    vgc.sketches = {gc.sketch};
 
     _draw_path_collection_generic(vgc,
                                   master_transform,
@@ -1206,42 +1210,25 @@ inline void RendererAgg::draw_quad_mesh(GCAgg &gc,
     QuadMeshGenerator<CoordinateArray> path_generator(mesh_width, mesh_height, coordinates);
 
     array::empty<double> transforms;
-    array::scalar<double, 1> linewidths(gc.linewidth);
-    array::scalar<uint8_t, 1> antialiaseds(antialiased);
-    DashesVector linestyles;
-    ColorArray hatchcolors = py::array_t<double>().reshape({0, 4}).unchecked<double, 2>();
 
     VGCAgg vgc;
-    vgc.alphas.push_back(gc.alpha);
-    vgc.forced_alphas.push_back(gc.forced_alpha);
-    vgc.antialiaseds.clear();
-    for (ssize_t i = 0; i < antialiaseds.shape(0); ++i) {
-        vgc.antialiaseds.push_back(static_cast<bool>(antialiaseds(i)));
-    }
-    vgc.linewidths.clear();
-    for (ssize_t i = 0; i < linewidths.shape(0); ++i) {
-        vgc.linewidths.push_back(linewidths(i));
-    }
-    vgc.edgecolors.clear();
-    for (ssize_t i = 0; i < edgecolors.shape(0); ++i) {
-        vgc.edgecolors.emplace_back(edgecolors(i, 0), edgecolors(i, 1), edgecolors(i, 2), edgecolors(i, 3));
-    }
-    vgc.facecolors.clear();
-    for (ssize_t i = 0; i < facecolors.shape(0); ++i) {
-        vgc.facecolors.emplace_back(facecolors(i, 0), facecolors(i, 1), facecolors(i, 2), facecolors(i, 3));
-    }
-    vgc.capstyles.push_back(gc.cap);
-    vgc.joinstyles.push_back(gc.join);
+
+    vgc.alphas = {gc.alpha};
+    vgc.forced_alphas = {gc.forced_alpha};
+    vgc.antialiaseds = {antialiased};
+    vgc.linewidths = {gc.linewidth};
+    vgc.edgecolors = edgecolors;
+    vgc.facecolors = facecolors;
+    vgc.capstyles = {gc.cap};
+    vgc.joinstyles = {gc.join};
     vgc.clippath = gc.clippath;
     vgc.cliprect = gc.cliprect;
-    vgc.dashes = linestyles;
-    vgc.hatch_colors.clear();
-    for (ssize_t i = 0; i < hatchcolors.shape(0); ++i) {
-        vgc.hatch_colors.emplace_back(hatchcolors(i, 0), hatchcolors(i, 1), hatchcolors(i, 2), hatchcolors(i, 3));
-    }
-    vgc.hatch_linewidths.push_back(gc.hatch_linewidth);
-    vgc.snap_modes.push_back(gc.snap_mode);
-    vgc.sketches.push_back(gc.sketch);
+    vgc.dashes = {};
+    vgc.hatchpaths = {gc.hatchpath};
+    vgc.hatch_colors = py::array_t<double>().reshape({0, 4});
+    vgc.hatch_linewidths = {gc.hatch_linewidth};
+    vgc.snap_modes = {gc.snap_mode};
+    vgc.sketches = {gc.sketch};
 
     _draw_path_collection_generic(vgc,
                                   master_transform,

@@ -4,7 +4,6 @@
 #include "mplutils.h"
 #include "py_converters.h"
 #include "_backend_agg.h"
-#include "_backend_agg_basic_types.h"
 
 namespace py = pybind11;
 using namespace pybind11::literals;
@@ -140,21 +139,18 @@ PyRendererAgg_draw_path_collection(RendererAgg *self,
                                    py::array_t<double> transforms_obj,
                                    py::array_t<double> offsets_obj,
                                    agg::trans_affine offset_trans,
-                                   py::array_t<double> facecolors_obj,
-                                   py::array_t<double> edgecolors_obj,
+                                   py::array_t<double> facecolors,
+                                   py::array_t<double> edgecolors,
                                    py::array_t<double> linewidths_obj,
                                    DashesVector dashes,
                                    py::array_t<uint8_t> antialiaseds_obj,
                                    py::object Py_UNUSED(ignored_obj),
                                    // offset position is no longer used
                                    py::object Py_UNUSED(offset_position_obj),
-                                   py::array_t<double> hatchcolors_obj)
+                                   py::array_t<double> hatchcolors)
 {
     auto transforms = convert_transforms(transforms_obj);
     auto offsets = convert_points(offsets_obj);
-    auto facecolors = convert_colors(facecolors_obj);
-    auto edgecolors = convert_colors(edgecolors_obj);
-    auto hatchcolors = convert_colors(hatchcolors_obj);
     auto linewidths = linewidths_obj.unchecked<1>();
     auto antialiaseds = antialiaseds_obj.unchecked<1>();
 
@@ -203,14 +199,12 @@ PyRendererAgg_draw_quad_mesh(RendererAgg *self,
                              py::array_t<double, py::array::c_style | py::array::forcecast> coordinates_obj,
                              py::array_t<double> offsets_obj,
                              agg::trans_affine offset_trans,
-                             py::array_t<double> facecolors_obj,
+                             py::array_t<double> facecolors,
                              bool antialiased,
-                             py::array_t<double> edgecolors_obj)
+                             py::array_t<double> edgecolors)
 {
     auto coordinates = coordinates_obj.mutable_unchecked<3>();
     auto offsets = convert_points(offsets_obj);
-    auto facecolors = convert_colors(facecolors_obj);
-    auto edgecolors = convert_colors(edgecolors_obj);
 
     self->draw_quad_mesh(gc,
             master_transform,
