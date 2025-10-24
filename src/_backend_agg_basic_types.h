@@ -134,35 +134,29 @@ class VGCAgg
     {
     }
 
-    py::array_t<double> alphas;
-    py::array_t<uint8_t> forced_alphas;
-    py::array_t<uint8_t> antialiaseds;
-    py::array_t<double> linewidths;
-    py::array_t<agg::rgba> edgecolors;
-    py::array_t<agg::rgba> facecolors;
+    std::vector<double> alphas;
+    std::vector<bool> forced_alphas;
+    std::vector<bool> antialiaseds;
+    std::vector<double> linewidths;
+    py::array_t<double> edgecolors;
+    py::array_t<double> facecolors;
 
-    py::array_t<agg::line_cap_e> capstyles;
-    py::array_t<agg::line_join_e> joinstyles;
+    std::vector<agg::line_cap_e> capstyles;
+    std::vector<agg::line_join_e> joinstyles;
 
     agg::rect_d cliprect;
 
     ClipPath clippath;
 
-    py::array_t<Dashes> dashes;
+    std::vector<Dashes> dashes;
 
-    py::array hatchpaths;
-    py::array_t<agg::rgba> hatch_colors;
-    py::array_t<double> hatch_linewidths;
+    std::vector<mpl::PathIterator> hatchpaths;
+    py::array_t<double> hatch_colors;
+    std::vector<double> hatch_linewidths;
 
-    py::array_t<e_snap_mode> snap_modes;
+    std::vector<e_snap_mode> snap_modes;
 
-    py::array_t<SketchParams> sketches;
-
-    bool has_hatchpath_at(size_t i) const
-    {
-        return (i < hatchpaths.size() &&
-                hatchpaths[i].total_vertices() != 0);
-    }
+    std::vector<SketchParams> sketches;
 
   private:
     // prevent copying
@@ -302,20 +296,20 @@ namespace PYBIND11_NAMESPACE { namespace detail {
         PYBIND11_TYPE_CASTER(VGCAgg, const_name("VGCAgg"));
 
         bool load(handle src, bool) {
-            value.alphas = src.attr("get_alphas")().cast<py::array_t<double>>();
-            value.forced_alphas = src.attr("get_forced_alphas")().cast<py::array_t<uint8_t>>();
-            value.antialiaseds = src.attr("get_antialiaseds")().cast<py::array_t<uint8_t>>();
-            value.capstyles = src.attr("get_capstyles")().cast<py::array_t<agg::line_cap_e>>();
-            value.dashes = src.attr("get_dashes")().cast<py::array_t<Dashes>>();
-            value.joinstyles = src.attr("get_joinstyles")().cast<py::array_t<agg::line_join_e>>();
-            value.linewidths = src.attr("get_linewidths")().cast<py::array_t<double>>();
-            value.edgecolors = src.attr("get_edgecolors")().cast<py::array_t<agg::rgba>>();
-            value.facecolors = src.attr("get_facecolors")().cast<py::array_t<agg::rgba>>();
-            value.hatchpaths = src.attr("get_hatch_paths")().cast<py::array>();
-            value.hatch_colors = src.attr("get_hatch_colors")().cast<py::array_t<agg::rgba>>();
-            value.hatch_linewidths = src.attr("get_hatch_linewidths")().cast<py::array_t<double>>();
-            value.snap_modes = src.attr("get_snaps")().cast<py::array_t<e_snap_mode>>();
-            value.sketches = src.attr("get_sketches_params")().cast<py::array_t<SketchParams>>();
+            value.alphas = src.attr("get_alphas")().cast<std::vector<double>>();
+            value.forced_alphas = src.attr("get_forced_alphas")().cast<std::vector<bool>>();
+            value.antialiaseds = src.attr("get_antialiaseds")().cast<std::vector<bool>>();
+            value.capstyles = src.attr("get_capstyles")().cast<std::vector<agg::line_cap_e>>();
+            value.dashes = src.attr("get_dashes")().cast<std::vector<Dashes>>();
+            value.joinstyles = src.attr("get_joinstyles")().cast<std::vector<agg::line_join_e>>();
+            value.linewidths = src.attr("get_linewidths")().cast<std::vector<double>>();
+            value.edgecolors = src.attr("get_edgecolors")().cast<py::array_t<double>>();
+            value.facecolors = src.attr("get_facecolors")().cast<py::array_t<double>>();
+            value.hatchpaths = src.attr("get_hatch_paths")().cast<std::vector<mpl::PathIterator>>();
+            value.hatch_colors = src.attr("get_hatch_colors")().cast<py::array_t<double>>();
+            value.hatch_linewidths = src.attr("get_hatch_linewidths")().cast<std::vector<double>>();
+            value.snap_modes = src.attr("get_snaps")().cast<std::vector<e_snap_mode>>();
+            value.sketches = src.attr("get_sketches_params")().cast<std::vector<SketchParams>>();
             value.cliprect = src.attr("get_clip_rectangle")().cast<agg::rect_d>();
             value.clippath = src.attr("get_clip_path")().cast<ClipPath>();
 
