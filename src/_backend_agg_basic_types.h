@@ -136,7 +136,7 @@ class VGCAgg
 
     std::vector<double> alphas;
     std::vector<bool> forced_alphas;
-    std::vector<bool> antialiaseds;
+    py::array_t<uint8_t> antialiaseds;
     std::vector<double> linewidths;
     py::array_t<double> edgecolors;
     py::array_t<double> facecolors;
@@ -298,7 +298,7 @@ namespace PYBIND11_NAMESPACE { namespace detail {
         bool load(handle src, bool) {
             value.alphas = src.attr("get_alphas")().cast<std::vector<double>>();
             value.forced_alphas = src.attr("get_forced_alphas")().cast<std::vector<bool>>();
-            value.antialiaseds = src.attr("get_antialiaseds")().cast<std::vector<bool>>();
+            value.antialiaseds = src.attr("get_antialiaseds")().cast<py::array_t<uint8_t>>();
             value.capstyles = src.attr("get_capstyles")().cast<std::vector<agg::line_cap_e>>();
             value.dashes = src.attr("get_dashes")().cast<std::vector<Dashes>>();
             value.joinstyles = src.attr("get_joinstyles")().cast<std::vector<agg::line_join_e>>();

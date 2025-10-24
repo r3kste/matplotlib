@@ -908,11 +908,12 @@ inline void RendererAgg::_draw_path_collection_generic(VGCAgg &vgc,
     auto facecolors = convert_colors(vgc.facecolors);
     auto edgecolors = convert_colors(vgc.edgecolors);
     auto hatch_colors = convert_colors(vgc.hatch_colors);
+    auto antialiaseds = vgc.antialiaseds.unchecked<1>();
 
     size_t Ntransforms = safe_first_shape(transforms);
     size_t Nalphas = vgc.alphas.size();
     size_t Nforced_alphas = vgc.forced_alphas.size();
-    size_t Naa = vgc.antialiaseds.size();
+    size_t Nantialiaseds = safe_first_shape(antialiaseds);
     size_t Ncapstyles = vgc.capstyles.size();
     size_t Ndashes = vgc.dashes.size();
     size_t Njoinstyles = vgc.joinstyles.size();
@@ -975,8 +976,8 @@ inline void RendererAgg::_draw_path_collection_generic(VGCAgg &vgc,
             int ic = i % Nforced_alphas;
             gc.forced_alpha = vgc.forced_alphas[ic];
         }
-        if(Naa){
-            gc.isaa = vgc.antialiaseds[i % Naa];
+        if(Nantialiaseds){
+            gc.isaa = antialiaseds(i % Nantialiaseds);
         }
         if (Nedgecolors) {
             int ic = i % Nedgecolors;
@@ -1073,10 +1074,7 @@ inline void RendererAgg::draw_path_collection(GCAgg &gc,
 
     vgc.alphas = {gc.alpha};
     vgc.forced_alphas = {gc.forced_alpha};
-    vgc.antialiaseds.clear();
-    for (ssize_t i = 0; i < antialiaseds.shape(0); ++i) {
-        vgc.antialiaseds.push_back(static_cast<bool>(antialiaseds(i)));
-    }
+    vgc.antialiaseds = antialiaseds;
     vgc.linewidths.clear();
     for (ssize_t i = 0; i < linewidths.shape(0); ++i) {
         vgc.linewidths.push_back(linewidths(i));
@@ -1215,7 +1213,7 @@ inline void RendererAgg::draw_quad_mesh(GCAgg &gc,
 
     vgc.alphas = {gc.alpha};
     vgc.forced_alphas = {gc.forced_alpha};
-    vgc.antialiaseds = {antialiased};
+    vgc.antialiaseds = py::array_t<uint8_t>({1}, reinterpret_cast<uint8_t *>(&antialiased));
     vgc.linewidths = {gc.linewidth};
     vgc.edgecolors = edgecolors;
     vgc.facecolors = facecolors;
