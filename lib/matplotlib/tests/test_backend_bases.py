@@ -3,7 +3,7 @@ import importlib
 from matplotlib import path, transforms
 from matplotlib.backend_bases import (
     FigureCanvasBase, KeyEvent, LocationEvent, MouseButton, MouseEvent,
-    NavigationToolbar2, RendererBase)
+    NavigationToolbar2, RendererBase, VectorizedGraphicsContextBase)
 from matplotlib.backend_tools import RubberbandBase
 from matplotlib.figure import Figure
 from matplotlib.testing._markers import needs_pgf_xelatex
@@ -32,13 +32,18 @@ def test_uses_per_path():
         rb = RendererBase()
         raw_paths = list(rb._iter_collection_raw_paths(
             master_transform, paths, all_transforms))
-        gc = rb.new_gc()
+        vgc = VectorizedGraphicsContextBase()
+        vgc._edgecolors = edgecolors
+        vgc._facecolors = facecolors
+        vgc._linewidths = []
+        vgc._dashes = []
+        vgc._antialiaseds = [0]
+        vgc._urls = []
+        vgc._hatchcolors = []
         ids = [path_id for xo, yo, path_id, gc0, rgbFace in
                rb._iter_collection(
-                   gc, range(len(raw_paths)), offsets,
-                   transforms.AffineDeltaTransform(master_transform),
-                   facecolors, edgecolors, [], [], [False],
-                   [], 'screen', hatchcolors=[])]
+                   vgc, range(len(raw_paths)), offsets,
+                   transforms.AffineDeltaTransform(master_transform))]
         uses = rb._iter_collection_uses_per_path(
             paths, all_transforms, offsets, facecolors, edgecolors)
         if raw_paths:

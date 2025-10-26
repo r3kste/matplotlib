@@ -1871,11 +1871,11 @@ end"""
             self.output(Op.paint_path(fill, stroke))
             self.endStream()
 
-    def pathCollectionObject(self, vgc, path, trans, padding, filled, stroked):
+    def pathCollectionObject(self, gc, path, trans, padding, filled, stroked):
         name = Name('P%d' % len(self.paths))
         ob = self.reserveObject('path %d' % len(self.paths))
         self.paths.append(
-            (name, path, trans, ob, vgc.get_joinstyle(), vgc.get_capstyle(),
+            (name, path, trans, ob, gc.get_joinstyle(), gc.get_capstyle(),
              padding, filled, stroked))
         return name
 
@@ -2057,6 +2057,9 @@ class RendererPdf(_backend_pdf_ps.RendererPDFPSBase):
                              linewidths=None, linestyles=None, antialiaseds=None,
                              urls=None, offset_position=None, *, hatchcolors=None):
 
+        if hatchcolors is None:
+            hatchcolors = []
+
         if isinstance(gc_or_vgc, GraphicsContextBase):
             vgc = VectorizedGraphicsContextBase()
             vgc._alphas = [gc_or_vgc.get_alpha()]
@@ -2064,9 +2067,9 @@ class RendererPdf(_backend_pdf_ps.RendererPDFPSBase):
             vgc._antialiaseds = antialiaseds
             vgc._capstyles = [gc_or_vgc.get_capstyle()]
             vgc._cliprect = gc_or_vgc.get_clip_rectangle()
-            vgc._clippath = gc_or_vgc.get_clip_path()
+            vgc._clippath = gc_or_vgc._clippath
             vgc._joinstyles = [gc_or_vgc.get_joinstyle()]
-            vgc._linestyles = linestyles
+            vgc._dashes = linestyles
             vgc._linewidths = linewidths
             vgc._edgecolors = edgecolors
             vgc._facecolors = facecolors
@@ -2089,7 +2092,7 @@ class RendererPdf(_backend_pdf_ps.RendererPDFPSBase):
 
         if not len(facecolors):
             filled = False
-            can_do_optimization = not vgc.get_hatch()
+            can_do_optimization = not vgc.get_hatches()
         else:
             if np.all(facecolors[:, 3] == facecolors[0, 3]):
                 filled = facecolors[0, 3] != 0.0
@@ -2121,12 +2124,20 @@ class RendererPdf(_backend_pdf_ps.RendererPDFPSBase):
                 self, vgc, master_transform, paths, all_transforms,
                 offsets, offset_trans)
 
+        Njoinstyles = len(vgc._joinstyles)
+        Ncapstyles = len(vgc._capstyles)
+
         padding = np.max(linewidths)
         path_codes = []
         for i, (path, transform) in enumerate(self._iter_collection_raw_paths(
                 master_transform, paths, all_transforms)):
+            gc = self.new_gc()
+            if Njoinstyles:
+                gc.set_joinstyle(vgc.get_joinstyles()[i % Njoinstyles])
+            if Ncapstyles:
+                gc.set_capstyle(vgc.get_capstyles()[i % Ncapstyles])
             name = self.file.pathCollectionObject(
-                vgc, path, transform, padding, filled, stroked)
+                gc, path, transform, padding, filled, stroked)
             path_codes.append(name)
 
         output = self.file.output
