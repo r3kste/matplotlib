@@ -240,6 +240,9 @@ class RendererBase:
         path_ids = self._iter_collection_raw_paths(master_transform,
                                                    paths, all_transforms)
 
+        if hatchcolors is None:
+            hatchcolors = []
+
         if isinstance(gc_or_vgc, GraphicsContextBase):
             vgc = VectorizedGraphicsContextBase()
             vgc._alphas = [gc_or_vgc.get_alpha()]
@@ -247,9 +250,9 @@ class RendererBase:
             vgc._antialiaseds = antialiaseds
             vgc._capstyles = [gc_or_vgc.get_capstyle()]
             vgc._cliprect = gc_or_vgc.get_clip_rectangle()
-            vgc._clippath = gc_or_vgc.get_clip_path()
+            vgc._clippath = gc_or_vgc._clippath
             vgc._joinstyles = [gc_or_vgc.get_joinstyle()]
-            vgc._linestyles = linestyles
+            vgc._dashes = linestyles
             vgc._linewidths = linewidths
             vgc._edgecolors = edgecolors
             vgc._facecolors = facecolors
@@ -410,7 +413,7 @@ class RendererBase:
             return
 
         gc = self.new_gc()
-        gc.set_clip_path(vgc._clippath[0])
+        gc.set_clip_path(vgc._clippath)
         gc.set_clip_rectangle(vgc._cliprect)
 
         def cycle_or_default(seq, default=None):
@@ -458,9 +461,9 @@ class RendererBase:
             if Nantialiaseds:
                 gc.set_antialiased(antialiased)
             if Ncapstyles:
-                gc.set_capstyle(capstyle)
+                gc.set_capstyle(CapStyle(capstyle))
             if Njoinstyles:
-                gc.set_joinstyle(joinstyle)
+                gc.set_joinstyle(JoinStyle(joinstyle))
             if Nedgecolors:
                 if Nlinewidths:
                     gc.set_linewidth(linewidth)
@@ -1092,11 +1095,11 @@ class VectorizedGraphicsContextBase:
         self._alphas = [1.0]
         self._forced_alphas = [False]
         self._antialiaseds = [1]
-        self._capstyles = [CapStyle('butt')]
+        self._capstyles = ['butt']
         self._cliprect = None
         self._clippath = None
         self._dashes = [(0.0, None)]
-        self._joinstyles = [JoinStyle('round')]
+        self._joinstyles = ['round']
         self._linewidths = [1]
         self._edgecolors = [(0.0, 0.0, 0.0, 1.0)]
         self._facecolors = [(0.0, 0.0, 0.0, 1.0)]
@@ -1118,10 +1121,7 @@ class VectorizedGraphicsContextBase:
         return self._antialiaseds
 
     def get_capstyles(self):
-        capstyles = []
-        for capstyle in self._capstyles:
-            capstyles.append(capstyle.name)
-        return capstyles
+        return self._capstyles
 
     def get_clip_rectangle(self):
         return self._cliprect
@@ -1140,10 +1140,7 @@ class VectorizedGraphicsContextBase:
         return self._dashes
 
     def get_joinstyles(self):
-        joinstyles = []
-        for joinstyle in self._joinstyles:
-            joinstyles.append(joinstyle.name)
-        return joinstyles
+        return self._joinstyles
 
     def get_linewidths(self):
         return self._linewidths
@@ -1218,6 +1215,7 @@ class VectorizedGraphicsContextBase:
 
     def set_clip_path(self, path):
         _api.check_isinstance((transforms.TransformedPath, None), path=path)
+        self._clippath = path
 
     def set_dashes(self, dash_offset_vector, dash_list_vector):
         if len(dash_offset_vector) == len(dash_list_vector):

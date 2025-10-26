@@ -25,7 +25,8 @@ import numpy as np
 import matplotlib as mpl
 from matplotlib import _api, cbook, _path, _text_helpers
 from matplotlib.backend_bases import (
-    _Backend, FigureCanvasBase, FigureManagerBase, RendererBase)
+    _Backend, FigureCanvasBase, FigureManagerBase, RendererBase, GraphicsContextBase,
+    VectorizedGraphicsContextBase)
 from matplotlib.cbook import is_writable_file_like, file_requires_unicode
 from matplotlib.font_manager import get_font
 from matplotlib.ft2font import LoadFlags
@@ -670,12 +671,36 @@ grestore
         self._draw_ps(ps, gc, rgbFace, fill=False, stroke=False)
 
     @_log_if_debug_on
-    def draw_path_collection(self, gc, master_transform, paths, all_transforms,
+    def draw_path_collection(self, gc_or_vgc, master_transform, paths, all_transforms,
                              offsets, offset_trans, facecolors, edgecolors,
                              linewidths, linestyles, antialiaseds, urls,
                              offset_position, *, hatchcolors=None):
         if hatchcolors is None:
             hatchcolors = []
+
+        if isinstance(gc_or_vgc, GraphicsContextBase):
+            vgc = VectorizedGraphicsContextBase()
+            vgc._alphas = [gc_or_vgc.get_alpha()]
+            vgc._forced_alphas = [gc_or_vgc.get_forced_alpha()]
+            vgc._antialiaseds = antialiaseds
+            vgc._capstyles = [gc_or_vgc.get_capstyle()]
+            vgc._cliprect = gc_or_vgc.get_clip_rectangle()
+            vgc._clippath = gc_or_vgc._clippath
+            vgc._joinstyles = [gc_or_vgc.get_joinstyle()]
+            vgc._dashes = linestyles
+            vgc._linewidths = linewidths
+            vgc._edgecolors = edgecolors
+            vgc._facecolors = facecolors
+            vgc._hatches = [gc_or_vgc.get_hatch()]
+            vgc._hatchcolors = hatchcolors
+            vgc._hatch_linewidths = [gc_or_vgc.get_hatch_linewidth()]
+            vgc._urls = urls
+            vgc._gids = [gc_or_vgc.get_gid()]
+            vgc._snaps = [gc_or_vgc.get_snap()]
+            vgc._sketches = [gc_or_vgc.get_sketch_params()]
+        elif isinstance(gc_or_vgc, VectorizedGraphicsContextBase):
+            vgc = gc_or_vgc
+
         # Is the optimization worth it? Rough calculation:
         # cost of emitting a path in-line is
         #     (len_path + 2) * uses_per_path
@@ -683,15 +708,13 @@ grestore
         #     (len_path + 3) + 3 * uses_per_path
         len_path = len(paths[0].vertices) if len(paths) > 0 else 0
         uses_per_path = self._iter_collection_uses_per_path(
-            paths, all_transforms, offsets, facecolors, edgecolors)
+            paths, all_transforms, offsets, vgc._facecolors, vgc._edgecolors)
         should_do_optimization = \
             len_path + 3 * uses_per_path + 3 < (len_path + 2) * uses_per_path
         if not should_do_optimization:
             return RendererBase.draw_path_collection(
-                self, gc, master_transform, paths, all_transforms,
-                offsets, offset_trans, facecolors, edgecolors,
-                linewidths, linestyles, antialiaseds, urls,
-                offset_position, hatchcolors=hatchcolors)
+                self, vgc, master_transform, paths, all_transforms,
+                offsets, offset_trans)
 
         path_codes = []
         for i, (path, transform) in enumerate(self._iter_collection_raw_paths(
@@ -708,9 +731,7 @@ translate
             path_codes.append(name)
 
         for xo, yo, path_id, gc0, rgbFace in self._iter_collection(
-                gc, path_codes, offsets, offset_trans,
-                facecolors, edgecolors, linewidths, linestyles,
-                antialiaseds, urls, offset_position, hatchcolors=hatchcolors):
+                vgc, path_codes, offsets, offset_trans):
             ps = f"{xo:g} {yo:g} {path_id}"
             self._draw_ps(ps, gc0, rgbFace)
 

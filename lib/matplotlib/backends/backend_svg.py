@@ -738,6 +738,10 @@ class RendererSVG(RendererBase):
                              offsets, offset_trans, facecolors=None, edgecolors=None,
                              linewidths=None, linestyles=None, antialiaseds=None,
                              urls=None, offset_position=None, *, hatchcolors=None):
+
+        if hatchcolors is None:
+            hatchcolors = []
+
         if isinstance(gc_or_vgc, GraphicsContextBase):
             vgc = VectorizedGraphicsContextBase()
             vgc._alphas = [gc_or_vgc.get_alpha()]
@@ -745,9 +749,9 @@ class RendererSVG(RendererBase):
             vgc._antialiaseds = antialiaseds
             vgc._capstyles = [gc_or_vgc.get_capstyle()]
             vgc._cliprect = gc_or_vgc.get_clip_rectangle()
-            vgc._clippath = gc_or_vgc.get_clip_path()
+            vgc._clippath = gc_or_vgc._clippath
             vgc._joinstyles = [gc_or_vgc.get_joinstyle()]
-            vgc._linestyles = linestyles
+            vgc._dashes = linestyles
             vgc._linewidths = linewidths
             vgc._edgecolors = edgecolors
             vgc._facecolors = facecolors
