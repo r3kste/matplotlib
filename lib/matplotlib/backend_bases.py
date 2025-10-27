@@ -1121,7 +1121,7 @@ class VectorizedGraphicsContextBase:
         return self._antialiaseds
 
     def get_capstyles(self):
-        return self._capstyles
+        return [cs.name for cs in self._capstyles]
 
     def get_clip_rectangle(self):
         return self._cliprect
@@ -1140,7 +1140,7 @@ class VectorizedGraphicsContextBase:
         return self._dashes
 
     def get_joinstyles(self):
-        return self._joinstyles
+        return [js.name for js in self._joinstyles]
 
     def get_linewidths(self):
         return self._linewidths
@@ -1195,16 +1195,11 @@ class VectorizedGraphicsContextBase:
         self._alphas = new_alphas.copy()
         self._forced_alphas = new_forced_alphas.copy()
 
-    def set_antialiaseds(self, b_vector):
-        for i, b in enumerate(b_vector):
-            b_vector[i] = int(bool(b))
-        self._antialiaseds = b_vector.copy()
+    def set_antialiaseds(self, antialiaseds):
+        self._antialiaseds = [int(bool(b)) for b in antialiaseds]
 
-    @_docstring.interpd
-    def set_capstyles(self, cs_vector):
-        self._capstyles = [None] * len(cs_vector)
-        for i, cs in enumerate(cs_vector):
-            self._capstyles[i] = CapStyle(cs)
+    def set_capstyles(self, capstyles):
+        self._capstyles = [CapStyle(cs) for cs in capstyles]
 
     def set_clip_rectangle(self, rectangle):
         self._cliprect = rectangle
@@ -1213,10 +1208,10 @@ class VectorizedGraphicsContextBase:
         _api.check_isinstance((transforms.TransformedPath, None), path=path)
         self._clippath = path
 
-    def set_dashes(self, dash_offset_vector, dash_list_vector):
-        if len(dash_offset_vector) == len(dash_list_vector):
+    def set_dashes(self, dash_offsets, dash_lists):
+        if len(dash_offsets) == len(dash_lists):
             dashes = []
-            for dash_offset, dash_list in zip(dash_offset_vector, dash_list_vector):
+            for dash_offset, dash_list in zip(dash_offsets, dash_lists):
                 if dash_list is not None:
                     dl = np.asarray(dash_list)
                     if np.any(dl < 0.0):
@@ -1231,14 +1226,11 @@ class VectorizedGraphicsContextBase:
             raise ValueError(
                 "Length of vector of dash_offset and dash_list is not equal.")
 
-    @_docstring.interpd
-    def set_joinstyles(self, js_vector):
-        self._capstyles = [None] * len(js_vector)
-        for i, js in enumerate(js_vector):
-            self._joinstyles[i] = JoinStyle(js)
+    def set_joinstyles(self, joinstyles):
+        self._joinstyles = [JoinStyle(js) for js in joinstyles]
 
-    def set_linewidths(self, w_vector):
-        self._linewidths = w_vector.copy()
+    def set_linewidths(self, linewidths):
+        self._linewidths = linewidths.copy()
 
     def set_edgecolors(self, edgecolors):
         n = len(edgecolors)
@@ -1261,8 +1253,8 @@ class VectorizedGraphicsContextBase:
     def set_urls(self, urls):
         self._urls = urls.copy()
 
-    def set_gids(self, ids):
-        self._gids = ids.copy()
+    def set_gids(self, gids):
+        self._gids = gids.copy()
 
     def set_snaps(self, snaps):
         self._snaps = snaps.copy()
