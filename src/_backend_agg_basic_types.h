@@ -134,10 +134,10 @@ class VGCAgg
     {
     }
 
-    std::vector<double> alphas;
-    std::vector<bool> forced_alphas;
+    py::array_t<double> alphas;
+    py::array_t<uint8_t> forced_alphas;
     py::array_t<uint8_t> antialiaseds;
-    std::vector<double> linewidths;
+    py::array_t<double> linewidths;
     py::array_t<double> edgecolors;
     py::array_t<double> facecolors;
 
@@ -152,7 +152,7 @@ class VGCAgg
 
     std::vector<mpl::PathIterator> hatchpaths;
     py::array_t<double> hatch_colors;
-    std::vector<double> hatch_linewidths;
+    py::array_t<double> hatch_linewidths;
 
     std::vector<e_snap_mode> snap_modes;
 
@@ -296,18 +296,18 @@ namespace PYBIND11_NAMESPACE { namespace detail {
         PYBIND11_TYPE_CASTER(VGCAgg, const_name("VGCAgg"));
 
         bool load(handle src, bool) {
-            value.alphas = src.attr("get_alphas")().cast<std::vector<double>>();
-            value.forced_alphas = src.attr("get_forced_alphas")().cast<std::vector<bool>>();
+            value.alphas = src.attr("get_alphas")().cast<py::array_t<double>>();
+            value.forced_alphas = src.attr("get_forced_alphas")().cast<py::array_t<uint8_t>>();
             value.antialiaseds = src.attr("get_antialiaseds")().cast<py::array_t<uint8_t>>();
             value.capstyles = src.attr("get_capstyles")().cast<std::vector<agg::line_cap_e>>();
             value.dashes = src.attr("get_dashes")().cast<std::vector<Dashes>>();
             value.joinstyles = src.attr("get_joinstyles")().cast<std::vector<agg::line_join_e>>();
-            value.linewidths = src.attr("get_linewidths")().cast<std::vector<double>>();
+            value.linewidths = src.attr("get_linewidths")().cast<py::array_t<double>>();
             value.edgecolors = src.attr("get_edgecolors")().cast<py::array_t<double>>();
             value.facecolors = src.attr("get_facecolors")().cast<py::array_t<double>>();
             value.hatchpaths = src.attr("get_hatch_paths")().cast<std::vector<mpl::PathIterator>>();
             value.hatch_colors = src.attr("get_hatch_colors")().cast<py::array_t<double>>();
-            value.hatch_linewidths = src.attr("get_hatch_linewidths")().cast<std::vector<double>>();
+            value.hatch_linewidths = src.attr("get_hatch_linewidths")().cast<py::array_t<double>>();
             value.snap_modes = src.attr("get_snaps")().cast<std::vector<e_snap_mode>>();
             value.sketches = src.attr("get_sketches_params")().cast<std::vector<SketchParams>>();
             value.cliprect = src.attr("get_clip_rectangle")().cast<agg::rect_d>();

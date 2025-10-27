@@ -1154,17 +1154,13 @@ class VectorizedGraphicsContextBase:
     def get_hatches(self):
         return self._hatches
 
-    def get_hatch_paths(self, density=[]):
+    def get_hatch_paths(self, density=6.0):
         hatches = self.get_hatches()
         if hatches == []:
-            return None
-        if len(density) > len(hatches):
-            density = density[:len(hatches)]
-        elif len(density) < len(hatches):
-            density += [6.0]*(len(hatches) - len(density))
+            return []
         hatch_paths = [None]*len(hatches)
         for i, hatch in enumerate(hatches):
-            hatch_paths[i] = Path.hatch(hatch, density[i])
+            hatch_paths[i] = Path.hatch(hatch, density)
         return hatch_paths
 
     def get_hatch_colors(self):
