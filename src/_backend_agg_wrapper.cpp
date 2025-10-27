@@ -141,7 +141,7 @@ PyRendererAgg_draw_path_collection(RendererAgg *self,
                                    agg::trans_affine offset_trans,
                                    py::array_t<double> facecolors,
                                    py::array_t<double> edgecolors,
-                                   py::array_t<double> linewidths_obj,
+                                   py::array_t<double> linewidths,
                                    DashesVector dashes,
                                    py::array_t<uint8_t> antialiaseds,
                                    py::object Py_UNUSED(ignored_obj),
@@ -151,7 +151,6 @@ PyRendererAgg_draw_path_collection(RendererAgg *self,
 {
     auto transforms = convert_transforms(transforms_obj);
     auto offsets = convert_points(offsets_obj);
-    auto linewidths = linewidths_obj.unchecked<1>();
 
     self->draw_path_collection(gc,
             master_transform,

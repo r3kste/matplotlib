@@ -908,21 +908,25 @@ inline void RendererAgg::_draw_path_collection_generic(VGCAgg &vgc,
     auto facecolors = convert_colors(vgc.facecolors);
     auto edgecolors = convert_colors(vgc.edgecolors);
     auto hatch_colors = convert_colors(vgc.hatch_colors);
+    auto alphas = vgc.alphas.unchecked<1>();
+    auto forced_alphas = vgc.forced_alphas.unchecked<1>();
     auto antialiaseds = vgc.antialiaseds.unchecked<1>();
+    auto linewidths = vgc.linewidths.unchecked<1>();
+    auto hatch_linewidths = vgc.hatch_linewidths.unchecked<1>();
 
     size_t Ntransforms = safe_first_shape(transforms);
-    size_t Nalphas = vgc.alphas.size();
-    size_t Nforced_alphas = vgc.forced_alphas.size();
+    size_t Nalphas = safe_first_shape(alphas);
+    size_t Nforced_alphas = safe_first_shape(forced_alphas);
     size_t Nantialiaseds = safe_first_shape(antialiaseds);
     size_t Ncapstyles = vgc.capstyles.size();
     size_t Ndashes = vgc.dashes.size();
     size_t Njoinstyles = vgc.joinstyles.size();
-    size_t Nlinewidths = vgc.linewidths.size();
+    size_t Nlinewidths = safe_first_shape(linewidths);
     size_t Nedgecolors = safe_first_shape(edgecolors);
     size_t Nfacecolors = safe_first_shape(facecolors);
     size_t Nhatchpaths = vgc.hatchpaths.size();
     size_t Nhatchcolors = safe_first_shape(hatch_colors);
-    size_t Nhatch_linewidths = vgc.hatch_linewidths.size();
+    size_t Nhatch_linewidths = safe_first_shape(hatch_linewidths);
     size_t Nsnap_modes = vgc.snap_modes.size();
     size_t Nsketches = vgc.sketches.size();
 
@@ -969,12 +973,10 @@ inline void RendererAgg::_draw_path_collection_generic(VGCAgg &vgc,
         trans *= agg::trans_affine_translation(0.0, (double)height);
 
         if(Nalphas){
-            int ic = i % Nalphas;
-            gc.alpha = vgc.alphas[ic];
+            gc.alpha = alphas(i % Nalphas);
         }
         if(Nforced_alphas){
-            int ic = i % Nforced_alphas;
-            gc.forced_alpha = vgc.forced_alphas[ic];
+            gc.forced_alpha = forced_alphas(i % Nforced_alphas);
         }
         if(Nantialiaseds){
             gc.isaa = antialiaseds(i % Nantialiaseds);
@@ -984,7 +986,7 @@ inline void RendererAgg::_draw_path_collection_generic(VGCAgg &vgc,
             gc.color = agg::rgba(edgecolors(ic, 0), edgecolors(ic, 1), edgecolors(ic, 2), edgecolors(ic, 3));
 
             if (Nlinewidths) {
-                gc.linewidth = vgc.linewidths[i % Nlinewidths];
+                gc.linewidth = linewidths(i % Nlinewidths);
             } else {
                 gc.linewidth = 1.0;
             }
@@ -1011,7 +1013,7 @@ inline void RendererAgg::_draw_path_collection_generic(VGCAgg &vgc,
             gc.hatch_color = agg::rgba(hatch_colors(ic, 0), hatch_colors(ic, 1), hatch_colors(ic, 2), hatch_colors(ic, 3));
         }
         if(Nhatch_linewidths){
-            gc.hatch_linewidth = vgc.hatch_linewidths[i % Nhatch_linewidths];
+            gc.hatch_linewidth = hatch_linewidths(i % Nhatch_linewidths);
         }
         if(Nsnap_modes){
             gc.snap_mode = vgc.snap_modes[i % Nsnap_modes];
@@ -1072,13 +1074,10 @@ inline void RendererAgg::draw_path_collection(GCAgg &gc,
 {
     VGCAgg vgc;
 
-    vgc.alphas = {gc.alpha};
-    vgc.forced_alphas = {gc.forced_alpha};
+    vgc.alphas = py::array_t<double>({1}, &gc.alpha);
+    vgc.forced_alphas = py::array_t<uint8_t>({1}, reinterpret_cast<uint8_t *>(&gc.forced_alpha));
     vgc.antialiaseds = antialiaseds;
-    vgc.linewidths.clear();
-    for (ssize_t i = 0; i < linewidths.shape(0); ++i) {
-        vgc.linewidths.push_back(linewidths(i));
-    }
+    vgc.linewidths = linewidths;
     vgc.edgecolors = edgecolors;
     vgc.facecolors = facecolors;
     vgc.capstyles = {gc.cap};
@@ -1088,7 +1087,7 @@ inline void RendererAgg::draw_path_collection(GCAgg &gc,
     vgc.dashes = linestyles;
     vgc.hatchpaths = {gc.hatchpath};
     vgc.hatch_colors = hatchcolors;
-    vgc.hatch_linewidths = {gc.hatch_linewidth};
+    vgc.hatch_linewidths = py::array_t<double>({1}, &gc.hatch_linewidth);
     vgc.snap_modes = {gc.snap_mode};
     vgc.sketches = {gc.sketch};
 
@@ -1211,10 +1210,10 @@ inline void RendererAgg::draw_quad_mesh(GCAgg &gc,
 
     VGCAgg vgc;
 
-    vgc.alphas = {gc.alpha};
-    vgc.forced_alphas = {gc.forced_alpha};
+    vgc.alphas = py::array_t<double>({1}, &gc.alpha);
+    vgc.forced_alphas = py::array_t<uint8_t>({1}, reinterpret_cast<uint8_t *>(&gc.forced_alpha));
     vgc.antialiaseds = py::array_t<uint8_t>({1}, reinterpret_cast<uint8_t *>(&antialiased));
-    vgc.linewidths = {gc.linewidth};
+    vgc.linewidths = py::array_t<double>({1}, &gc.linewidth);
     vgc.edgecolors = edgecolors;
     vgc.facecolors = facecolors;
     vgc.capstyles = {gc.cap};
@@ -1224,7 +1223,7 @@ inline void RendererAgg::draw_quad_mesh(GCAgg &gc,
     vgc.dashes = {};
     vgc.hatchpaths = {gc.hatchpath};
     vgc.hatch_colors = py::array_t<double>().reshape({0, 4});
-    vgc.hatch_linewidths = {gc.hatch_linewidth};
+    vgc.hatch_linewidths = py::array_t<double>({1}, &gc.hatch_linewidth);
     vgc.snap_modes = {gc.snap_mode};
     vgc.sketches = {gc.sketch};
 
