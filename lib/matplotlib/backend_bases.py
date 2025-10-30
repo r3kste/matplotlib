@@ -1121,7 +1121,7 @@ class VectorizedGraphicsContextBase:
         return self._antialiaseds
 
     def get_capstyles(self):
-        return [cs.name for cs in self._capstyles]
+        return self._capstyles
 
     def get_clip_rectangle(self):
         return self._cliprect
@@ -1140,7 +1140,7 @@ class VectorizedGraphicsContextBase:
         return self._dashes
 
     def get_joinstyles(self):
-        return [js.name for js in self._joinstyles]
+        return self._joinstyles
 
     def get_linewidths(self):
         return self._linewidths

@@ -672,9 +672,9 @@ grestore
 
     @_log_if_debug_on
     def draw_path_collection(self, gc_or_vgc, master_transform, paths, all_transforms,
-                             offsets, offset_trans, facecolors, edgecolors,
-                             linewidths, linestyles, antialiaseds, urls,
-                             offset_position, *, hatchcolors=None):
+                             offsets, offset_trans, facecolors=None, edgecolors=None,
+                             linewidths=None, linestyles=None, antialiaseds=None,
+                             urls=None, offset_position=None, *, hatchcolors=None):
         if hatchcolors is None:
             hatchcolors = []
 
