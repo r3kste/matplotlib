@@ -245,24 +245,8 @@ class RendererBase:
 
         if isinstance(gc_or_vgc, GraphicsContextBase):
             vgc = VectorizedGraphicsContextBase()
-            vgc._alphas = [gc_or_vgc.get_alpha()]
-            vgc._forced_alphas = [gc_or_vgc.get_forced_alpha()]
-            vgc._antialiaseds = antialiaseds
-            vgc._capstyles = [gc_or_vgc.get_capstyle()]
-            vgc._cliprect = gc_or_vgc.get_clip_rectangle()
-            vgc._clippath = gc_or_vgc._clippath
-            vgc._joinstyles = [gc_or_vgc.get_joinstyle()]
-            vgc._dashes = linestyles
-            vgc._linewidths = linewidths
-            vgc._edgecolors = edgecolors
-            vgc._facecolors = facecolors
-            vgc._hatches = [gc_or_vgc.get_hatch()]
-            vgc._hatchcolors = hatchcolors
-            vgc._hatch_linewidths = [gc_or_vgc.get_hatch_linewidth()]
-            vgc._urls = urls
-            vgc._gids = [gc_or_vgc.get_gid()]
-            vgc._snaps = [gc_or_vgc.get_snap()]
-            vgc._sketches = [gc_or_vgc.get_sketch_params()]
+            vgc.copy_properties(gc_or_vgc, facecolors, edgecolors, linewidths,
+                                linestyles, antialiaseds, urls, hatchcolors)
         elif isinstance(gc_or_vgc, VectorizedGraphicsContextBase):
             vgc = gc_or_vgc
 
@@ -1110,6 +1094,27 @@ class VectorizedGraphicsContextBase:
         self._gids = [None]
         self._snaps = [None]
         self._sketches = [None]
+
+    def copy_properties(self, gc, facecolors, edgecolors, linewidths, linestyles,
+                        antialiaseds, urls, hatchcolors):
+        self._alphas = [gc._alpha]
+        self._forced_alphas = [gc._forced_alpha]
+        self._antialiaseds = antialiaseds
+        self._capstyles = [gc._capstyle]
+        self._cliprect = gc._cliprect
+        self._clippath = gc._clippath
+        self._dashes = linestyles
+        self._joinstyles = [gc._joinstyle]
+        self._linewidths = linewidths
+        self._edgecolors = edgecolors
+        self._facecolors = facecolors
+        self._hatches = [gc._hatch]
+        self._hatchcolors = hatchcolors
+        self._hatch_linewidths = [gc._hatch_linewidth]
+        self._urls = urls
+        self._gids = [gc._gid]
+        self._snaps = [gc._snap]
+        self._sketches = [gc._sketch]
 
     def get_alphas(self):
         return self._alphas
