@@ -2127,7 +2127,7 @@ class RendererPdf(_backend_pdf_ps.RendererPDFPSBase):
         Njoinstyles = len(vgc._joinstyles)
         Ncapstyles = len(vgc._capstyles)
 
-        padding = np.max(linewidths)
+        padding = np.max(vgc.get_linewidths())
         path_codes = []
         for i, (path, transform) in enumerate(self._iter_collection_raw_paths(
                 master_transform, paths, all_transforms)):
