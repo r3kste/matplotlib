@@ -42,21 +42,11 @@ class PathEffectRenderer(RendererBase):
     ) -> None: ...
     def draw_path_collection(
         self,
-        gc: GraphicsContextBase | VectorizedGraphicsContextBase,
+        gc_or_vgc: GraphicsContextBase | VectorizedGraphicsContextBase,
         master_transform: Transform,
         paths: Sequence[Path],
-        all_transforms,
-        offsets,
-        offset_trans,
-        facecolors: Any = ...,
-        edgecolors: Any = ...,
-        linewidths: Any = ...,
-        linestyles: Any = ...,
-        antialiaseds: Any = ...,
-        urls: Any = ...,
-        offset_position: Any = ...,
-        *,
-        hatchcolors: Any = ...,
+        *args,
+        **kwargs
     ) -> None: ...
     def __getattribute__(self, name: str) -> Any: ...
 
