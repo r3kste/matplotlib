@@ -734,10 +734,29 @@ class RendererSVG(RendererBase):
             self.writer.end('a')
         writer.end('g')
 
-    def draw_path_collection(self, gc_or_vgc, master_transform, paths, all_transforms,
-                             offsets, offset_trans, facecolors=None, edgecolors=None,
-                             linewidths=None, linestyles=None, antialiaseds=None,
-                             urls=None, offset_position=None, *, hatchcolors=None):
+    def draw_path_collection(
+        self,
+        gc_or_vgc,
+        master_transform,
+        paths,
+        all_transforms,
+        offsets,
+        offset_trans,
+        facecolors=None,
+        edgecolors=None,
+        linewidths=None,
+        linestyles=None,
+        antialiaseds=None,
+        urls=None,
+        offset_position=None,
+        hatchcolors=None,
+        hatches=None,
+        hatch_linewidths=None,
+        alphas=None,
+        forced_alphas=None,
+        joinstyles=None,
+        capstyles=None,
+    ):
 
         if hatchcolors is None:
             hatchcolors = []
@@ -748,6 +767,13 @@ class RendererSVG(RendererBase):
                                 linestyles, antialiaseds, urls, hatchcolors)
         elif isinstance(gc_or_vgc, VectorizedGraphicsContextBase):
             vgc = gc_or_vgc
+
+        vgc._hatches = hatches
+        vgc._hatch_linewidths = hatch_linewidths
+        vgc._alphas = alphas
+        vgc._forced_alphas = forced_alphas
+        vgc._joinstyles = joinstyles
+        vgc._capstyles = capstyles
 
         # Is the optimization worth it? Rough calculation:
         # cost of emitting a path in-line is

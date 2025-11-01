@@ -131,6 +131,40 @@ PyRendererAgg_draw_image(RendererAgg *self,
     self->draw_image(gc, x, y, image);
 }
 
+inline auto convert_capstyles(const std::vector<std::string>& capstyles_strs) {
+    std::vector<agg::line_cap_e> capstyles;
+    capstyles.reserve(capstyles_strs.size());
+    for (const auto& style_str : capstyles_strs) {
+        if (style_str == "butt") {
+            capstyles.push_back(agg::butt_cap);
+        } else if (style_str == "round") {
+            capstyles.push_back(agg::round_cap);
+        } else if (style_str == "projecting") {
+            capstyles.push_back(agg::square_cap);
+        } else {
+            throw std::runtime_error("Unknown capstyle: " + style_str);
+        }
+    }
+    return capstyles;
+}
+
+inline auto convert_joinstyles(const std::vector<std::string>& joinstyles_strs) {
+    std::vector<agg::line_join_e> joinstyles;
+    joinstyles.reserve(joinstyles_strs.size());
+    for (const auto& style_str : joinstyles_strs) {
+        if (style_str == "miter") {
+            joinstyles.push_back(agg::miter_join);
+        } else if (style_str == "round") {
+            joinstyles.push_back(agg::round_join);
+        } else if (style_str == "bevel") {
+            joinstyles.push_back(agg::bevel_join);
+        } else {
+            throw std::runtime_error("Unknown joinstyle: " + style_str);
+        }
+    }
+    return joinstyles;
+}
+
 static void
 PyRendererAgg_draw_path_collection(RendererAgg *self,
                                    GCAgg &gc,
@@ -147,10 +181,23 @@ PyRendererAgg_draw_path_collection(RendererAgg *self,
                                    py::object Py_UNUSED(ignored_obj),
                                    // offset position is no longer used
                                    py::object Py_UNUSED(offset_position_obj),
-                                   py::array_t<double> hatchcolors)
+                                   py::array_t<double> hatchcolors,
+                                   std::vector<mpl::PathIterator> hatches,
+                                   std::vector<double> hatch_linewidths,
+                                   std::vector<double> alphas,
+                                   std::vector<bool> forced_alphas,
+                                   std::vector<std::string> joinstyles,
+                                   std::vector<std::string> capstyles 
+                                )
 {
     auto transforms = convert_transforms(transforms_obj);
     auto offsets = convert_points(offsets_obj);
+
+    //             value.cap = src.attr("_capstyle").cast<agg::line_cap_e>();
+            // value.join = src.attr("_joinstyle").cast<agg::line_join_e>();
+    
+    std::vector<agg::line_cap_e> capstyles_converted = convert_capstyles(capstyles);
+    std::vector<agg::line_join_e> joinstyles_converted = convert_joinstyles(joinstyles);
 
     self->draw_path_collection(gc,
             master_transform,
@@ -163,30 +210,37 @@ PyRendererAgg_draw_path_collection(RendererAgg *self,
             linewidths,
             dashes,
             antialiaseds,
-            hatchcolors);
-}
-
-static void
-PyRendererAgg_draw_path_collection(RendererAgg *self,
-                                   VGCAgg &vgc,
-                                   agg::trans_affine master_transform,
-                                   mpl::PathGenerator paths,
-                                   py::array_t<double> transforms_obj,
-                                   py::array_t<double> offsets_obj,
-                                   agg::trans_affine offset_trans,
-                                   py::object Py_UNUSED(ignored_obj))
-{
-    auto transforms = convert_transforms(transforms_obj);
-    auto offsets = convert_points(offsets_obj);
-
-    self->draw_path_collection(vgc,
-            master_transform,
-            paths,
-            transforms,
-            offsets,
-            offset_trans
+            hatchcolors,
+            hatches,
+            hatch_linewidths,
+            alphas,
+            forced_alphas,
+            joinstyles_converted,
+            capstyles_converted
         );
 }
+
+// static void
+// PyRendererAgg_draw_path_collection(RendererAgg *self,
+//                                    VGCAgg &vgc,
+//                                    agg::trans_affine master_transform,
+//                                    mpl::PathGenerator paths,
+//                                    py::array_t<double> transforms_obj,
+//                                    py::array_t<double> offsets_obj,
+//                                    agg::trans_affine offset_trans,
+//                                    py::object Py_UNUSED(ignored_obj))
+// {
+//     auto transforms = convert_transforms(transforms_obj);
+//     auto offsets = convert_points(offsets_obj);
+
+//     self->draw_path_collection(vgc,
+//             master_transform,
+//             paths,
+//             transforms,
+//             offsets,
+//             offset_trans
+//         );
+// }
 
 static void
 PyRendererAgg_draw_quad_mesh(RendererAgg *self,
@@ -244,20 +298,17 @@ PYBIND11_MODULE(_backend_agg, m, py::mod_gil_not_used())
              "image"_a, "x"_a, "y"_a, "angle"_a, "gc"_a)
         .def("draw_image", &PyRendererAgg_draw_image,
              "gc"_a, "x"_a, "y"_a, "image"_a)
-        .def("draw_path_collection", py::overload_cast<RendererAgg *, GCAgg &, agg::trans_affine, mpl::PathGenerator,
-                                                       py::array_t<double>, py::array_t<double>, agg::trans_affine,
-                                                       py::array_t<double>, py::array_t<double>, py::array_t<double>,
-                                                       DashesVector, py::array_t<uint8_t>, py::object, py::object,
-                                                       py::array_t<double>>(&PyRendererAgg_draw_path_collection),
+        .def("draw_path_collection", &PyRendererAgg_draw_path_collection,
              "gc"_a, "master_transform"_a, "paths"_a, "transforms"_a, "offsets"_a,
              "offset_trans"_a, "facecolors"_a, "edgecolors"_a, "linewidths"_a,
              "dashes"_a, "antialiaseds"_a, "ignored"_a, "offset_position"_a,
-             py::kw_only(), "hatchcolors"_a = py::array_t<double>().reshape({0, 4}))
-        .def("draw_path_collection", py::overload_cast<RendererAgg *, VGCAgg &, agg::trans_affine, mpl::PathGenerator,
-                                                       py::array_t<double>, py::array_t<double>, agg::trans_affine,
-                                                       py::object>(&PyRendererAgg_draw_path_collection),
-             "vgc"_a, "master_transform"_a, "paths"_a, "transforms"_a, "offsets"_a,
-             "offset_trans"_a,"ignored"_a = py::array_t<double>())
+             "hatchcolors"_a, "hatches"_a, "hatch_linewidths"_a,
+             "alphas"_a, "forced_alphas"_a, "joinstyles"_a, "capstyles"_a)
+        // .def("draw_path_collection", py::overload_cast<RendererAgg *, VGCAgg &, agg::trans_affine, mpl::PathGenerator,
+        //                                                py::array_t<double>, py::array_t<double>, agg::trans_affine,
+        //                                                py::object>(&PyRendererAgg_draw_path_collection),
+        //      "vgc"_a, "master_transform"_a, "paths"_a, "transforms"_a, "offsets"_a,
+        //      "offset_trans"_a,"ignored"_a = py::array_t<double>())
         .def("draw_quad_mesh", &PyRendererAgg_draw_quad_mesh,
              "gc"_a, "master_transform"_a, "mesh_width"_a, "mesh_height"_a,
              "coordinates"_a, "offsets"_a, "offset_trans"_a, "facecolors"_a,

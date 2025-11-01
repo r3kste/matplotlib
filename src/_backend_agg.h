@@ -176,7 +176,14 @@ class RendererAgg
                               LineWidthArray &linewidths,
                               DashesVector &linestyles,
                               AntialiasedArray &antialiaseds,
-                              ColorArray &hatchcolors);
+                              ColorArray &hatchcolors,
+                              std::vector<mpl::PathIterator> &hatches,
+                                std::vector<double> &hatch_linewidths,
+                                std::vector<double> &alphas,
+                                std::vector<bool> &forced_alphas,
+                                std::vector<agg::line_join_e> &joinstyles,
+                                std::vector<agg::line_cap_e> &capstyles
+                            );
 
     template <class PathGenerator,
               class TransformArray,
@@ -1070,24 +1077,32 @@ inline void RendererAgg::draw_path_collection(GCAgg &gc,
                                               LineWidthArray &linewidths,
                                               DashesVector &linestyles,
                                               AntialiasedArray &antialiaseds,
-                                              ColorArray &hatchcolors)
+                                              ColorArray &hatchcolors,
+                                              std::vector<mpl::PathIterator> &hatches,
+                                              std::vector<double> &hatch_linewidths,
+                                              std::vector<double> &alphas,
+                                              std::vector<bool> &forced_alphas,
+                                              std::vector<agg::line_join_e> &joinstyles,
+                                              std::vector<agg::line_cap_e> &capstyles
+                                            )
 {
     VGCAgg vgc;
 
-    vgc.alphas = py::array_t<double>({1}, &gc.alpha);
-    vgc.forced_alphas = py::array_t<uint8_t>({1}, reinterpret_cast<uint8_t *>(&gc.forced_alpha));
+    vgc.alphas = py::array_t<double>(alphas.size(), alphas.data());
+    std::vector<uint8_t> forced_alphas_uint8(forced_alphas.begin(), forced_alphas.end());
+    vgc.forced_alphas = py::array_t<uint8_t>(forced_alphas_uint8.size(), forced_alphas_uint8.data());
     vgc.antialiaseds = antialiaseds;
     vgc.linewidths = linewidths;
     vgc.edgecolors = edgecolors;
     vgc.facecolors = facecolors;
-    vgc.capstyles = {gc.cap};
-    vgc.joinstyles = {gc.join};
+    vgc.capstyles = capstyles;
+    vgc.joinstyles = joinstyles;
     vgc.clippath = gc.clippath;
     vgc.cliprect = gc.cliprect;
     vgc.dashes = linestyles;
-    vgc.hatchpaths = {gc.hatchpath};
+    vgc.hatchpaths = hatches;
     vgc.hatch_colors = hatchcolors;
-    vgc.hatch_linewidths = py::array_t<double>({1}, &gc.hatch_linewidth);
+    vgc.hatch_linewidths = py::array_t<double>(hatch_linewidths.size(), hatch_linewidths.data());
     vgc.snap_modes = {gc.snap_mode};
     vgc.sketches = {gc.sketch};
 

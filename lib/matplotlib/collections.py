@@ -479,12 +479,13 @@ class Collection(mcolorizer.ColorizingArtist):
 
             args = [offsets, offset_trf, self.get_facecolor(), self.get_edgecolor(),
                     self._linewidths, self._linestyles, self._antialiaseds, self._urls,
-                    "screen"]
+                    "screen", self.get_hatchcolor(), self._hatches,
+                    self._hatch_linewidths, self._alphas, self._forced_alphas,
+                    self._joinstyles, self._capstyles]
 
-            if hatchcolors_arg_supported:
+            if True:
                 renderer.draw_path_collection(gc, transform.frozen(), paths,
-                                              self.get_transforms(), *args,
-                                              hatchcolors=self.get_hatchcolor())
+                                              self.get_transforms(), *args,)
             else:
                 if hatchcolors_not_needed:
                     renderer.draw_path_collection(gc, transform.frozen(), paths,
