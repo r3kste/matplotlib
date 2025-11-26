@@ -673,6 +673,9 @@ class RendererBase:
         """Return an instance of a `.GraphicsContextBase`."""
         return GraphicsContextBase()
 
+    def new_vgc(self):
+        return VectorizedGraphicsContextBase()
+
     def points_to_pixels(self, points):
         """
         Convert points to display units.

@@ -303,10 +303,10 @@ namespace PYBIND11_NAMESPACE { namespace detail {
             value.dashes = src.attr("get_dashes")().cast<std::vector<Dashes>>();
             value.joinstyles = src.attr("get_joinstyles")().cast<std::vector<agg::line_join_e>>();
             value.linewidths = src.attr("get_linewidths")().cast<py::array_t<double>>();
-            value.edgecolors = src.attr("get_edgecolors")().cast<py::array_t<double>>();
-            value.facecolors = src.attr("get_facecolors")().cast<py::array_t<double>>();
+            value.edgecolors = src.attr("get_edgecolors")().cast<py::array_t<double>>().reshape({-1, 4});
+            value.facecolors = src.attr("get_facecolors")().cast<py::array_t<double>>().reshape({-1, 4});
             value.hatchpaths = src.attr("get_hatch_paths")().cast<std::vector<mpl::PathIterator>>();
-            value.hatch_colors = src.attr("get_hatch_colors")().cast<py::array_t<double>>();
+            value.hatch_colors = src.attr("get_hatch_colors")().cast<py::array_t<double>>().reshape({-1, 4});
             value.hatch_linewidths = src.attr("get_hatch_linewidths")().cast<py::array_t<double>>();
             value.snap_modes = src.attr("get_snaps")().cast<std::vector<e_snap_mode>>();
             value.sketches = src.attr("get_sketches_params")().cast<std::vector<SketchParams>>();
