@@ -454,7 +454,12 @@ class Collection(mcolorizer.ColorizingArtist):
 
             vgc.set_facecolors(self.get_facecolor())
             vgc.set_edgecolors(self.get_edgecolor())
-            # vgc.set_dashes(self._linestyles)
+            dash_offsets = []
+            dash_lists = []
+            for i in range(len(self._linestyles)):
+                dash_offsets.append(self._linestyles[i][0])
+                dash_lists.append(self._linestyles[i][1])
+            vgc.set_dashes(dash_offsets, dash_lists)
 
             renderer.draw_path_collection(vgc, transform.frozen(), paths,
                                           self.get_transforms(), offsets, offset_trf)

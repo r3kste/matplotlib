@@ -1202,6 +1202,8 @@ class VectorizedGraphicsContextBase:
                 new_forced_alphas[i] = False
         self._alphas = new_alphas.copy()
         self._forced_alphas = new_forced_alphas.copy()
+        isRGBA = [True] * n
+        self.set_edgecolors(self._edgecolors, isRGBA=isRGBA)
 
     def set_antialiaseds(self, antialiaseds):
         self._antialiaseds = [int(bool(b)) for b in antialiaseds]
@@ -1232,7 +1234,7 @@ class VectorizedGraphicsContextBase:
             self._dashes = dashes.copy()
         else:
             raise ValueError(
-                "Length of vector of dash_offset and dash_list is not equal.")
+                "dash_offset and dash_list must be the same size")
 
     def set_joinstyles(self, joinstyles):
         self._joinstyles = [JoinStyle(js) for js in joinstyles]
@@ -1240,16 +1242,25 @@ class VectorizedGraphicsContextBase:
     def set_linewidths(self, linewidths):
         self._linewidths = linewidths.copy()
 
-    def set_edgecolors(self, edgecolors):
+    def set_edgecolors(self, edgecolors, isRGBA=[]):
         n = len(edgecolors)
+        if isRGBA == []:
+            isRGBA = [False] * n
+        elif len(isRGBA) > n:
+            isRGBA = isRGBA[:n]
+        elif len(isRGBA) < n:
+            isRGBA += [False]*(n - len(isRGBA))
+        if len(self._forced_alphas) < n:
+            self._forced_alphas += [False]*(n - len(self._forced_alphas))
+        else:
+            self._forced_alphas = self._forced_alphas[:n]
         new_edgecolors = [None] * n
         for i, edgecolor in enumerate(edgecolors):
-            isRGBA = bool(len(edgecolor) - 3)
-            if self._forced_alphas[i] and isRGBA:
+            if self._forced_alphas[i] and isRGBA[i]:
                 new_edgecolors[i] = edgecolor[:3] + (self._alphas[i],)
             elif self._forced_alphas[i]:
                 new_edgecolors[i] = colors.to_rgba(edgecolor, self._alphas[i])
-            elif isRGBA:
+            elif isRGBA[i]:
                 new_edgecolors[i] = edgecolor
             else:
                 new_edgecolors[i] = colors.to_rgba(edgecolor)
@@ -1288,7 +1299,7 @@ class VectorizedGraphicsContextBase:
             self._sketches = sketches.copy()
         else:
             raise ValueError(
-                "Lengths of scales, lengths and randomness should be equal.")
+                "scales, lengths and randomness must be the same size")
 
 
 class TimerBase:
