@@ -2060,11 +2060,10 @@ class RendererPdf(_backend_pdf_ps.RendererPDFPSBase):
         if hatchcolors is None:
             hatchcolors = []
 
-        if isinstance(vgc, GraphicsContextBase):
-            gc = vgc
+        if isinstance(gc := vgc, GraphicsContextBase):
             vgc = VectorizedGraphicsContextBase()
-            vgc.copy_properties(gc, facecolors, edgecolors, linewidths,
-                                linestyles, antialiaseds, urls, hatchcolors)
+            vgc.copy_properties(gc, facecolors, edgecolors, linewidths, linestyles,
+                                antialiaseds, urls, hatchcolors)
 
         # We can only reuse the objects if the presence of fill and
         # stroke (and the amount of alpha for each) is the same for

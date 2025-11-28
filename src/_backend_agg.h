@@ -944,10 +944,11 @@ inline void RendererAgg::_draw_path_collection_generic(VGCAgg &vgc,
     gc.linewidth = 0.0;
     std::optional<agg::rgba> face;
     agg::trans_affine trans;
+    gc.clippath = vgc.clippath;
+    gc.cliprect = vgc.cliprect;
 
     for (int i = 0; i < (int)N; ++i) {
         typename PathGenerator::path_iterator path = path_generator(i);
-
 
         if (Ntransforms) {
             int it = i % Ntransforms;
@@ -1022,8 +1023,6 @@ inline void RendererAgg::_draw_path_collection_generic(VGCAgg &vgc,
             gc.sketch = vgc.sketches[i % Nsketches];
         }
 
-        gc.clippath = vgc.clippath;
-        gc.cliprect = vgc.cliprect;
         bool has_clippath = render_clippath((gc.clippath).path, (gc.clippath).trans, gc.snap_mode);
         bool do_clip = Nfacecolors == 0 && !gc.has_hatchpath();
         transformed_path_t tpath(path, trans);

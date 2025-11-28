@@ -426,8 +426,8 @@ class Collection(mcolorizer.ColorizingArtist):
             vgc.set_snaps([self.get_snap()])
 
             if self._hatch:
-                vgc.set_hatches([self._hatch])
-                vgc.set_hatch_linewidths([self._hatch_linewidth])
+                vgc.set_hatches([self.get_hatch()])
+                vgc.set_hatch_linewidths([self.get_hatch_linewidth()])
                 vgc.set_hatch_colors(self.get_hatchcolor())
 
             if self.get_sketch_params() is not None:

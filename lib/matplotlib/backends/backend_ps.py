@@ -678,12 +678,10 @@ grestore
         if hatchcolors is None:
             hatchcolors = []
 
-        if isinstance(vgc, GraphicsContextBase):
-            gc = vgc
+        if isinstance(gc := vgc, GraphicsContextBase):
             vgc = VectorizedGraphicsContextBase()
-            vgc.copy_properties(gc, facecolors, edgecolors, linewidths,
-                                linestyles, antialiaseds, urls, hatchcolors)
-
+            vgc.copy_properties(gc, facecolors, edgecolors, linewidths, linestyles,
+                                antialiaseds, urls, hatchcolors)
 
         # Is the optimization worth it? Rough calculation:
         # cost of emitting a path in-line is
@@ -692,7 +690,7 @@ grestore
         #     (len_path + 3) + 3 * uses_per_path
         len_path = len(paths[0].vertices) if len(paths) > 0 else 0
         uses_per_path = self._iter_collection_uses_per_path(
-            paths, all_transforms, offsets, vgc._facecolors, vgc._edgecolors)
+            paths, all_transforms, offsets, vgc.get_facecolors(), vgc.get_edgecolors())
         should_do_optimization = \
             len_path + 3 * uses_per_path + 3 < (len_path + 2) * uses_per_path
         if not should_do_optimization:

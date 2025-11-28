@@ -243,11 +243,10 @@ class RendererBase:
         if hatchcolors is None:
             hatchcolors = []
 
-        if isinstance(vgc, GraphicsContextBase):
-            gc = vgc
+        if isinstance(gc := vgc, GraphicsContextBase):
             vgc = VectorizedGraphicsContextBase()
-            vgc.copy_properties(gc, facecolors, edgecolors, linewidths,
-                                linestyles, antialiaseds, urls, hatchcolors)
+            vgc.copy_properties(gc, facecolors, edgecolors, linewidths, linestyles,
+                                antialiaseds, urls, hatchcolors)
 
         for xo, yo, path_id, gc0, rgbFace in self._iter_collection(
             vgc, list(path_ids), offsets, offset_trans

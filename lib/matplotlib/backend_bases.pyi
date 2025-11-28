@@ -74,7 +74,6 @@ class RendererBase:
         antialiaseds: bool | Sequence[bool] | None = ...,
         urls: str | Sequence[str] | None = ...,
         offset_position: Any = ...,
-        *,
         hatchcolors: ColorType | Sequence[ColorType] | None = ...,
     ) -> None: ...
     def draw_quad_mesh(

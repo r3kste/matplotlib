@@ -742,11 +742,10 @@ class RendererSVG(RendererBase):
         if hatchcolors is None:
             hatchcolors = []
 
-        if isinstance(vgc, GraphicsContextBase):
-            gc = vgc
+        if isinstance(gc := vgc, GraphicsContextBase):
             vgc = VectorizedGraphicsContextBase()
-            vgc.copy_properties(gc, facecolors, edgecolors, linewidths,
-                                linestyles, antialiaseds, urls, hatchcolors)
+            vgc.copy_properties(gc, facecolors, edgecolors, linewidths, linestyles,
+                                antialiaseds, urls, hatchcolors)
 
         # Is the optimization worth it? Rough calculation:
         # cost of emitting a path in-line is
