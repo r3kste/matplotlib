@@ -431,22 +431,22 @@ class Collection(mcolorizer.ColorizingArtist):
                 vgc.set_hatch_colors(self.get_hatchcolor())
 
             if self.get_sketch_params() is not None:
-                pass
+                vgc.set_sketch_params([self.get_sketch_params()])
 
             if self._joinstyle:
                 vgc.set_joinstyles([self._joinstyle])
             if self._capstyle:
                 vgc.set_capstyles([self._capstyle])
 
-            vgc.set_linewidths(self._linewidths)
-            vgc.set_antialiaseds(self._antialiaseds)
-            vgc.set_urls(self._urls)
+            vgc.set_linewidths(np.atleast_1d(self.get_linewidth()))
+            vgc.set_antialiaseds(self.get_antialiased())
+            vgc.set_urls(self.get_urls())
 
             if self._gapcolor is not None:
                 ipaths, ilinestyles = self._get_inverse_paths_linestyles()
                 vgc.set_facecolors([mcolors.to_rgba("none")])
                 vgc.set_edgecolors(self._gapcolor)
-                # vgc.set_dashes(ilinestyles)
+                vgc.set_dashes(ilinestyles)
 
                 renderer.draw_path_collection(vgc, transform.frozen(), ipaths,
                                               self.get_transforms(), offsets,
@@ -454,12 +454,7 @@ class Collection(mcolorizer.ColorizingArtist):
 
             vgc.set_facecolors(self.get_facecolor())
             vgc.set_edgecolors(self.get_edgecolor())
-            dash_offsets = []
-            dash_lists = []
-            for i in range(len(self._linestyles)):
-                dash_offsets.append(self._linestyles[i][0])
-                dash_lists.append(self._linestyles[i][1])
-            vgc.set_dashes(dash_offsets, dash_lists)
+            vgc.set_dashes(self.get_linestyle())
 
             renderer.draw_path_collection(vgc, transform.frozen(), paths,
                                           self.get_transforms(), offsets, offset_trf)

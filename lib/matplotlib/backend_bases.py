@@ -1079,23 +1079,23 @@ class GraphicsContextBase:
 
 class VectorizedGraphicsContextBase:
     def __init__(self):
-        self._alphas = [1.0]
-        self._forced_alphas = [False]
-        self._antialiaseds = [1]
-        self._capstyles = ['butt']
+        self._alphas = []
+        self._forced_alphas = []
+        self._antialiaseds = []
+        self._capstyles = []
         self._cliprect = None
         self._clippath = None
-        self._dashes = [(0.0, None)]
-        self._joinstyles = ['round']
-        self._linewidths = [1]
-        self._edgecolors = [(0.0, 0.0, 0.0, 1.0)]
-        self._facecolors = [(0.0, 0.0, 0.0, 1.0)]
+        self._dashes = []
+        self._joinstyles = []
+        self._linewidths = []
+        self._edgecolors = []
+        self._facecolors = []
         self._hatches = []
         self._hatchcolors = []
         self._hatch_linewidths = []
-        self._urls = [None]
-        self._gids = [None]
-        self._snaps = [None]
+        self._urls = []
+        self._gids = []
+        self._snaps = []
         self._sketches = [None]
 
     def copy_properties(self, gc, facecolors, edgecolors, linewidths, linestyles,
@@ -1166,7 +1166,7 @@ class VectorizedGraphicsContextBase:
         hatches = self.get_hatches()
         if hatches == []:
             return []
-        hatch_paths = [None]*len(hatches)
+        hatch_paths = [None] * len(hatches)
         for i, hatch in enumerate(hatches):
             hatch_paths[i] = Path.hatch(hatch, density)
         return hatch_paths
@@ -1202,6 +1202,7 @@ class VectorizedGraphicsContextBase:
                 new_forced_alphas[i] = False
         self._alphas = new_alphas.copy()
         self._forced_alphas = new_forced_alphas.copy()
+
         isRGBA = [True] * n
         self.set_edgecolors(self._edgecolors, isRGBA=isRGBA)
 
@@ -1218,23 +1219,20 @@ class VectorizedGraphicsContextBase:
         _api.check_isinstance((transforms.TransformedPath, None), path=path)
         self._clippath = path
 
-    def set_dashes(self, dash_offsets, dash_lists):
-        if len(dash_offsets) == len(dash_lists):
-            dashes = []
-            for dash_offset, dash_list in zip(dash_offsets, dash_lists):
-                if dash_list is not None:
-                    dl = np.asarray(dash_list)
-                    if np.any(dl < 0.0):
-                        raise ValueError(
-                            "All values in the dash list must be non-negative.")
-                    if dl.size and not np.any(dl > 0.0):
-                        raise ValueError(
-                            'At least one value in the dash list must be positive.')
-                dashes.append((dash_offset, dash_list))
-            self._dashes = dashes.copy()
-        else:
-            raise ValueError(
-                "dash_offset and dash_list must be the same size")
+    def set_dashes(self, dashes):
+        n = len(dashes)
+        new_dashes = [None] * n
+        for i, (dash_offset, dash_list) in enumerate(dashes):
+            if dash_list is not None:
+                dl = np.asarray(dash_list)
+                if np.any(dl < 0.0):
+                    raise ValueError(
+                        "All values in the dash list must be non-negative.")
+                if dl.size and not np.any(dl > 0.0):
+                    raise ValueError(
+                        "At least one value in the dash list must be positive.")
+            new_dashes[i] = (dash_offset, dash_list)
+        self._dashes = new_dashes.copy()
 
     def set_joinstyles(self, joinstyles):
         self._joinstyles = [JoinStyle(js) for js in joinstyles]
@@ -1242,18 +1240,16 @@ class VectorizedGraphicsContextBase:
     def set_linewidths(self, linewidths):
         self._linewidths = linewidths.copy()
 
-    def set_edgecolors(self, edgecolors, isRGBA=[]):
+    def set_edgecolors(self, edgecolors, isRGBA=None):
         n = len(edgecolors)
-        if isRGBA == []:
+        if isRGBA is None:
             isRGBA = [False] * n
-        elif len(isRGBA) > n:
-            isRGBA = isRGBA[:n]
         elif len(isRGBA) < n:
-            isRGBA += [False]*(n - len(isRGBA))
+            isRGBA += [False] * (n - len(isRGBA))
+
         if len(self._forced_alphas) < n:
-            self._forced_alphas += [False]*(n - len(self._forced_alphas))
-        else:
-            self._forced_alphas = self._forced_alphas[:n]
+            self._forced_alphas += [False] * (n - len(self._forced_alphas))
+
         new_edgecolors = [None] * n
         for i, edgecolor in enumerate(edgecolors):
             if self._forced_alphas[i] and isRGBA[i]:
@@ -1287,19 +1283,15 @@ class VectorizedGraphicsContextBase:
     def set_hatch_linewidths(self, hatch_linewidths):
         self._hatch_linewidths = hatch_linewidths.copy()
 
-    def set_sketches_params(self, scales=[None], lengths=[None], randomness=[None]):
-        if len(scales) == len(lengths) == len(randomness):
-            sketches = []
-            n = len(scales)
-            for i in range(n):
-                sketch = (
-                    None if scales[i] is None
-                    else (scales[i], lengths[i] or 128., randomness or 16.))
-                sketches.append(sketch)
-            self._sketches = sketches.copy()
-        else:
-            raise ValueError(
-                "scales, lengths and randomness must be the same size")
+    def set_sketches_params(self, sketches):
+        n = len(sketches)
+        new_sketches = [None] * n
+        for i, (scale, length, randomness) in enumerate(sketches):
+            if scale is None:
+                new_sketches[i] = None
+            else:
+                new_sketches[i] = (scale, length or 128.0, randomness or 16.0)
+        self._sketches = new_sketches.copy()
 
 
 class TimerBase:
