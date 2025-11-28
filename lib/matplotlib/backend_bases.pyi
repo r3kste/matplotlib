@@ -61,7 +61,7 @@ class RendererBase:
     ) -> None: ...
     def draw_path_collection(
         self,
-        gc_or_vgc: GraphicsContextBase | VectorizedGraphicsContextBase,
+        vgc: GraphicsContextBase | VectorizedGraphicsContextBase,
         master_transform: Transform,
         paths: Sequence[Path],
         all_transforms: Sequence[ArrayLike],

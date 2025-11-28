@@ -32,14 +32,10 @@ def test_uses_per_path():
         rb = RendererBase()
         raw_paths = list(rb._iter_collection_raw_paths(
             master_transform, paths, all_transforms))
-        vgc = VectorizedGraphicsContextBase()
+        vgc = rb.new_vgc()
         vgc._edgecolors = edgecolors
         vgc._facecolors = facecolors
-        vgc._linewidths = []
-        vgc._dashes = []
         vgc._antialiaseds = [0]
-        vgc._urls = []
-        vgc._hatchcolors = []
         ids = [path_id for xo, yo, path_id, gc0, rgbFace in
                rb._iter_collection(
                    vgc, range(len(raw_paths)), offsets,

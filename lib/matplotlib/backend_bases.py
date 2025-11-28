@@ -207,10 +207,10 @@ class RendererBase:
                                transforms.Affine2D().translate(x, y),
                                rgbFace)
 
-    def draw_path_collection(self, gc_or_vgc, master_transform, paths, all_transforms,
+    def draw_path_collection(self, vgc, master_transform, paths, all_transforms,
                              offsets, offset_trans, facecolors=None, edgecolors=None,
                              linewidths=None, linestyles=None, antialiaseds=None,
-                             urls=None, offset_position=None, *, hatchcolors=None):
+                             urls=None, offset_position=None, hatchcolors=None):
         """
         Draw a collection of *paths*.
 
@@ -243,12 +243,11 @@ class RendererBase:
         if hatchcolors is None:
             hatchcolors = []
 
-        if isinstance(gc_or_vgc, GraphicsContextBase):
+        if isinstance(vgc, GraphicsContextBase):
+            gc = vgc
             vgc = VectorizedGraphicsContextBase()
-            vgc.copy_properties(gc_or_vgc, facecolors, edgecolors, linewidths,
+            vgc.copy_properties(gc, facecolors, edgecolors, linewidths,
                                 linestyles, antialiaseds, urls, hatchcolors)
-        elif isinstance(gc_or_vgc, VectorizedGraphicsContextBase):
-            vgc = gc_or_vgc
 
         for xo, yo, path_id, gc0, rgbFace in self._iter_collection(
             vgc, list(path_ids), offsets, offset_trans
