@@ -471,7 +471,7 @@ class RendererBase:
                 gc.set_snap(snap)
             if Nsketches:
                 if sketch is not None:
-                    gc.set_sketch_params(sketch[0], sketch[1], sketch[2])
+                    gc.set_sketch_params(*sketch)
 
             yield xo, yo, pathid, gc, facecolor
         gc.restore()
