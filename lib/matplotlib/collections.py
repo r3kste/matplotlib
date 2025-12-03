@@ -422,6 +422,15 @@ class Collection(mcolorizer.ColorizingArtist):
             gc.restore()
         else:
             vgc = renderer.new_vgc()
+
+            vgc_supported = True
+            try:
+                renderer.draw_path_collection(vgc, transform.frozen(), [],
+                                              self.get_transforms(), offsets,
+                                              offset_trf)
+            except TypeError:
+                vgc_supported = False
+
             self._set_gc_clip(vgc)
             vgc.set_snaps([self.get_snap()])
 
@@ -448,16 +457,40 @@ class Collection(mcolorizer.ColorizingArtist):
                 vgc.set_edgecolors(self._gapcolor)
                 vgc.set_dashes(ilinestyles)
 
-                renderer.draw_path_collection(vgc, transform.frozen(), ipaths,
-                                              self.get_transforms(), offsets,
-                                              offset_trf)
+                if vgc_supported:
+                    renderer.draw_path_collection(vgc, transform.frozen(), ipaths,
+                                                self.get_transforms(), offsets,
+                                                offset_trf)
+                else:
+                    path_ids = renderer._iter_collection_raw_paths(
+                        transform.frozen(), ipaths, self.get_transforms())
+                    for xo, yo, path_id, gc0, rgbFace in renderer._iter_collection(
+                        vgc, list(path_ids), offsets, offset_trf
+                    ):
+                        path, transform = path_id
+                        if xo != 0 or yo != 0:
+                            transform = transform.frozen()
+                            transform.translate(xo, yo)
+                        renderer.draw_path(gc0, path, transform, rgbFace)
 
             vgc.set_facecolors(self.get_facecolor())
             vgc.set_edgecolors(self.get_edgecolor())
             vgc.set_dashes(self.get_linestyle())
 
-            renderer.draw_path_collection(vgc, transform.frozen(), paths,
-                                          self.get_transforms(), offsets, offset_trf)
+            if vgc_supported:
+                renderer.draw_path_collection(vgc, transform.frozen(), paths,
+                                            self.get_transforms(), offsets, offset_trf)
+            else:
+                path_ids = renderer._iter_collection_raw_paths(
+                    transform.frozen(), paths, self.get_transforms())
+                for xo, yo, path_id, gc0, rgbFace in renderer._iter_collection(
+                    vgc, list(path_ids), offsets, offset_trf
+                ):
+                    path, transform = path_id
+                    if xo != 0 or yo != 0:
+                        transform = transform.frozen()
+                        transform.translate(xo, yo)
+                    renderer.draw_path(gc0, path, transform, rgbFace)
 
         renderer.close_group(self.__class__.__name__)
         self.stale = False
