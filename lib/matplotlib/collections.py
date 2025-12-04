@@ -440,7 +440,7 @@ class Collection(mcolorizer.ColorizingArtist):
                 vgc.set_hatch_colors(self.get_hatchcolor())
 
             if self.get_sketch_params() is not None:
-                vgc.set_sketch_params([self.get_sketch_params()])
+                vgc.set_sketches_params([self.get_sketch_params()])
 
             if self._joinstyle:
                 vgc.set_joinstyles([self._joinstyle])
