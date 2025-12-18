@@ -328,10 +328,31 @@ class FigureCanvasQT(FigureCanvasBase, QtWidgets.QWidget):
     def mousePressEvent(self, event):
         button = self.buttond.get(event.button())
         if button is not None and self.figure is not None:
-            MouseEvent("button_press_event", self,
-                       *self.mouseEventCoords(event), button,
-                       modifiers=self._mpl_modifiers(),
-                       guiEvent=event)._process()
+            mpl_event = MouseEvent("button_press_event", self,
+                                        *self.mouseEventCoords(event), button,
+                                        modifiers=self._mpl_modifiers(),
+                                        guiEvent=event)
+            if button == MouseButton.RIGHT:
+                for ax in self.figure.get_axes():
+                    if ax.contains(mpl_event)[0] and ax.name == '3d':
+                        self.showContextMenu(event, ax)
+                        return
+
+            mpl_event._process()
+
+    def showContextMenu(self, event, ax):
+        menu = QtWidgets.QMenu(self)
+        menu.setTitle("3D View Options")
+
+        def set_view(elev, azim):
+            ax.view_init(elev=elev, azim=azim, roll=0)
+            self.draw_idle()
+
+        menu.addAction("Top View (XY)").triggered.connect(lambda: set_view(90, -90))
+        menu.addAction("Side View (YZ)").triggered.connect(lambda: set_view(0, 0))
+        menu.addAction("Front View (XZ)").triggered.connect(lambda: set_view(0, -90))
+
+        menu.exec(QtGui.QCursor.pos())
 
     def mouseDoubleClickEvent(self, event):
         button = self.buttond.get(event.button())
