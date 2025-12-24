@@ -16,6 +16,7 @@ import math
 import textwrap
 import warnings
 
+import functools
 import numpy as np
 
 import matplotlib as mpl
@@ -1367,6 +1368,19 @@ class Axes3D(Axes):
 
     def _button_release(self, event):
         self.button_pressed = None
+
+        # TODO: Context menu should only be shown if not moved
+        if event.button in self._zoom_btn and event.inaxes == self:
+            canvas = self.get_figure(root=True).canvas
+            canvas.manager.context_menu(
+                event,
+                labels=["XY", "YZ", "XZ"],
+                actions=[functools.partial(self.view_init, elev=90, azim=-90),
+                         functools.partial(self.view_init, elev=0, azim=0),
+                         functools.partial(self.view_init, elev=0, azim=-90)],
+            )
+            canvas.draw_idle()
+
         toolbar = self.get_figure(root=True).canvas.toolbar
         # backend_bases.release_zoom and backend_bases.release_pan call
         # push_current, so check the navigation mode so we don't call it twice
