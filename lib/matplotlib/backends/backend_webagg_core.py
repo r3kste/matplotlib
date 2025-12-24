@@ -288,6 +288,33 @@ class FigureCanvasWebAggCore(backend_agg.FigureCanvasAgg):
                           self.handle_unknown_event)
         return handler(event)
 
+    def handle_context_menu(self, event):
+        x_mpl = event['x']
+        y_mpl = self.figure.bbox.height - event['y']
+        mpl_event = MouseEvent('context_menu_event', self, x_mpl, y_mpl,
+                               button=MouseButton.RIGHT, guiEvent=event.get('guiEvent'))
+
+        for ax in self.figure.get_axes():
+            if ax.contains(mpl_event)[0] and getattr(ax, 'name', '') == '3d':
+                self.send_event('show_context_menu', x=event['x'], y=event['y'],
+                                options=['X-Y View', 'Y-Z View', 'X-Z View'],
+                                id=self.figure.get_axes().index(ax))
+                break
+
+    def handle_set_view(self, event):
+        view_name = event['view']
+        ax_index = event['id']
+
+        ax = self.figure.get_axes()[ax_index]
+        if view_name == 'X-Y View':
+            ax.view_init(elev=90, azim=-90, roll=0)
+        elif view_name == 'Y-Z View':
+            ax.view_init(elev=0, azim=0, roll=0)
+        elif view_name == 'X-Z View':
+            ax.view_init(elev=0, azim=-90, roll=0)
+
+        self.figure.canvas.draw_idle()
+
     def handle_unknown_event(self, event):
         _log.warning('Unhandled message type %s. %s', event["type"], event)
 

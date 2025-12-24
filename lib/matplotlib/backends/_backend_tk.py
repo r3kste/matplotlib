@@ -346,11 +346,34 @@ class FigureCanvasTk(FigureCanvasBase):
 
         num = getattr(event, 'num', None)
         if sys.platform == 'darwin':  # 2 and 3 are reversed.
-            num = {2: 3, 3: 2}.get(num, num)
-        MouseEvent("button_press_event", self,
+           if num == 2:
+               num = 3
+
+        mpl_event = MouseEvent("button_press_event", self,
                    *self._event_mpl_coords(event), num, dblclick=dblclick,
                    modifiers=self._mpl_modifiers(event),
-                   guiEvent=event)._process()
+                   guiEvent=event)
+
+        if num == 3:
+            for ax in self.figure.axes:
+                if ax.contains(mpl_event)[0] and ax.name == '3d':
+                    self.show_context_menu(event, ax)
+                    return
+        mpl_event._process()
+
+    def show_context_menu(self, event, ax):
+        menu = tk.Menu(tearoff=False)
+
+        def set_view(elev, azim):
+            ax.view_init(azim=azim, elev=elev, roll=0)
+            self.draw_idle()
+
+        menu.add_command(label="X-Y View", command=lambda: set_view(90,-90))
+        menu.add_command(label="Y-Z View", command=lambda: set_view(0,0))
+        menu.add_command(label="X-Z View", command=lambda: set_view(0,-90))
+
+        menu.post(event.x_root, event.y_root)
+
 
     def button_dblclick_event(self, event):
         self.button_press_event(event, dblclick=True)
