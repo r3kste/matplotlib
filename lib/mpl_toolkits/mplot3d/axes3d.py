@@ -16,6 +16,7 @@ import math
 import textwrap
 import warnings
 
+import functools
 import numpy as np
 
 import matplotlib as mpl
@@ -186,6 +187,8 @@ class Axes3D(Axes):
         # Calculate the pseudo-data width and height
         pseudo_bbox = self.transLimits.inverted().transform([(0, 0), (1, 1)])
         self._pseudo_w, self._pseudo_h = pseudo_bbox[1] - pseudo_bbox[0]
+
+        self._right_click_moved = False
 
         # mplot3d currently manages its own spines and needs these turned off
         # for bounding box calculations
@@ -1357,6 +1360,7 @@ class Axes3D(Axes):
 
     def _button_press(self, event):
         if event.inaxes == self:
+            self._right_click_moved = False
             self.button_pressed = event.button
             self._sx, self._sy = event.xdata, event.ydata
             toolbar = self.get_figure(root=True).canvas.toolbar
@@ -1367,6 +1371,19 @@ class Axes3D(Axes):
 
     def _button_release(self, event):
         self.button_pressed = None
+
+        if event.button in self._zoom_btn and event.inaxes == self \
+            and not self._right_click_moved:
+            canvas = self.get_figure(root=True).canvas
+            canvas.manager.context_menu(
+                event,
+                labels=["XY", "YZ", "XZ"],
+                actions=[functools.partial(self.view_init, elev=90, azim=-90),
+                         functools.partial(self.view_init, elev=0, azim=0),
+                         functools.partial(self.view_init, elev=0, azim=-90)],
+            )
+            canvas.draw_idle()
+
         toolbar = self.get_figure(root=True).canvas.toolbar
         # backend_bases.release_zoom and backend_bases.release_pan call
         # push_current, so check the navigation mode so we don't call it twice
@@ -1621,6 +1638,7 @@ class Axes3D(Axes):
         # Zoom
         elif self.button_pressed in self._zoom_btn:
             # zoom view (dragging down zooms in)
+            self._right_click_moved = True
             scale = h/(h - dy)
             self._scale_axis_limits(scale, scale, scale)
 
