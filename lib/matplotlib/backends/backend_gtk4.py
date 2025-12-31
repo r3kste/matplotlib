@@ -637,6 +637,34 @@ class FigureManagerGTK4(_FigureManagerGTK):
     _toolbar2_class = NavigationToolbar2GTK4
     _toolmanager_toolbar_class = ToolbarGTK4
 
+    def context_menu(self, event, labels=None, actions=None):
+        if labels is None or actions is None:
+            return
+        popover = Gtk.Popover()
+        popover.set_parent(self.window)
+        popover.set_has_arrow(False)
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        popover.set_child(box)
+        for label, action in zip(labels, actions):
+            btn = Gtk.Button(label=label)
+            def draw_lambda(_btn, a=action, p=popover):
+                a()
+                self.canvas.draw()
+                p.popdown()
+            btn.connect('clicked', draw_lambda)
+            box.append(btn)
+        scale = self.canvas.get_scale_factor()
+        x_canvas = (event.x / scale)
+        y_canvas = ((self.canvas.get_height() * scale - event.y) / scale)
+        x_win,y_win = self.canvas.translate_coordinates(self.window, x_canvas, y_canvas)
+        rect = Gdk.Rectangle()
+        rect.x = x_win
+        rect.y = y_win
+        rect.width = 1
+        rect.height = 1
+        popover.set_pointing_to(rect)
+        popover.popup()
+
 
 @_BackendGTK.export
 class _BackendGTK4(_BackendGTK):

@@ -188,7 +188,7 @@ class Axes3D(Axes):
         pseudo_bbox = self.transLimits.inverted().transform([(0, 0), (1, 1)])
         self._pseudo_w, self._pseudo_h = pseudo_bbox[1] - pseudo_bbox[0]
 
-        self._right_click_moved = False
+        self._mouse_moved = False
 
         # mplot3d currently manages its own spines and needs these turned off
         # for bounding box calculations
@@ -1360,7 +1360,7 @@ class Axes3D(Axes):
 
     def _button_press(self, event):
         if event.inaxes == self:
-            self._right_click_moved = False
+            self._mouse_moved = False
             self.button_pressed = event.button
             self._sx, self._sy = event.xdata, event.ydata
             toolbar = self.get_figure(root=True).canvas.toolbar
@@ -1373,7 +1373,7 @@ class Axes3D(Axes):
         self.button_pressed = None
 
         if event.button in self._zoom_btn and event.inaxes == self \
-            and not self._right_click_moved:
+            and not self._mouse_moved:
             canvas = self.get_figure(root=True).canvas
             canvas.manager.context_menu(
                 event,
@@ -1638,7 +1638,7 @@ class Axes3D(Axes):
         # Zoom
         elif self.button_pressed in self._zoom_btn:
             # zoom view (dragging down zooms in)
-            self._right_click_moved = True
+            self._mouse_moved = True
             scale = h/(h - dy)
             self._scale_axis_limits(scale, scale, scale)
 
