@@ -627,6 +627,14 @@ class FigureManagerQT(FigureManagerBase):
         else:
             self.window.showFullScreen()
 
+    def context_menu(self, event, labels=None, actions=None):
+        if labels is None or actions is None:
+            return
+        menu = QtWidgets.QMenu(self.window)
+        for label, action in zip(labels, actions):
+            menu.addAction(label).triggered.connect(action)
+        menu.exec(QtGui.QCursor.pos())
+
     def _widgetclosed(self):
         CloseEvent("close_event", self.canvas)._process()
         if self.window._destroying:
