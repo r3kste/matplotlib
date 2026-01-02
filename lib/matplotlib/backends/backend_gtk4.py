@@ -638,12 +638,12 @@ class FigureManagerGTK4(_FigureManagerGTK):
     _toolmanager_toolbar_class = ToolbarGTK4
 
     def context_menu(self, event, labels=None, actions=None):
-        if labels is None or actions is None:
+        if not labels or not actions:
             return
         popover = Gtk.Popover()
-        popover.set_parent(self.window)
+        popover.set_parent(self.canvas)
         popover.set_has_arrow(False)
-        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         popover.set_child(box)
         for label, action in zip(labels, actions):
             btn = Gtk.Button(label=label)
@@ -654,12 +654,10 @@ class FigureManagerGTK4(_FigureManagerGTK):
             btn.connect('clicked', draw_lambda)
             box.append(btn)
         scale = self.canvas.get_scale_factor()
-        x_canvas = (event.x / scale)
-        y_canvas = ((self.canvas.get_height() * scale - event.y) / scale)
-        x_win,y_win = self.canvas.translate_coordinates(self.window, x_canvas, y_canvas)
+        height = self.canvas.get_height()
         rect = Gdk.Rectangle()
-        rect.x = x_win
-        rect.y = y_win
+        rect.x = int(event.x / scale)
+        rect.y = int(height - (event.y / scale))
         rect.width = 1
         rect.height = 1
         popover.set_pointing_to(rect)

@@ -1580,6 +1580,9 @@ class Axes3D(Axes):
         w = self._pseudo_w
         h = self._pseudo_h
 
+        if (dx**2 + dy**2) > 5:
+            self._mouse_moved = True
+
         # Rotation
         if self.button_pressed in self._rotate_btn:
             # rotate viewing point
@@ -1638,8 +1641,6 @@ class Axes3D(Axes):
         # Zoom
         elif self.button_pressed in self._zoom_btn:
             # zoom view (dragging down zooms in)
-            if (dx**2 + dy**2) > 5:
-                self._mouse_moved = True
             scale = h/(h - dy)
             self._scale_axis_limits(scale, scale, scale)
 
