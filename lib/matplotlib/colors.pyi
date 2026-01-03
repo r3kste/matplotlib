@@ -393,7 +393,7 @@ class AsinhNorm(Normalize):
 class PowerNorm(Normalize):
     def __init__(
         self,
-        gamma: float = ...,
+        gamma: float,
         vmin: float | None = ...,
         vmax: float | None = ...,
         clip: bool = ...,

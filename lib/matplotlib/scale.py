@@ -306,13 +306,12 @@ class PowerTransform(Transform):
         return "{}(gamma={})".format(
             type(self).__name__, self.gamma)
 
-    def transform_non_affine(self, a):
+    def transform_non_affine(self, values):
         with np.errstate(divide="ignore", invalid="ignore"):
-            mask = np.ma.getmask(a)
-            d = np.asarray(a.data)
-            out = np.where(d > 0, np.power(d, self.gamma), d)
-            mout = np.ma.masked_array(out, mask=mask)
-            return mout
+            nonpos = ~(values > 0)
+            out = np.power(values, self.gamma)
+            out[nonpos] = values[nonpos]
+            return out
 
     def inverted(self):
         return InvertedPowerTransform(self.gamma)
@@ -339,13 +338,12 @@ class InvertedPowerTransform(Transform):
             raise ValueError('gamma cannot be 0')
         self.gamma = gamma
 
-    def transform_non_affine(self, a):
+    def transform_non_affine(self, values):
         with np.errstate(divide="ignore", invalid="ignore"):
-            input_mask = np.ma.getmask(a)
-            d = np.asarray(a.data)
-            out = np.where(d > 0, np.power(d, 1. / self.gamma), d)
-            mout = np.ma.array(out, mask=input_mask)
-            return mout
+            nonpos = ~(values > 0)
+            out = np.power(values, 1.0 / self.gamma)
+            out[nonpos] = values[nonpos]
+            return out
 
     def inverted(self):
         return PowerTransform(self.gamma)
@@ -928,6 +926,7 @@ _scale_has_axis_parameter = {
     'logit': True,
     'function': True,
     'functionlog': True,
+    'power': True,
 }
 
 
