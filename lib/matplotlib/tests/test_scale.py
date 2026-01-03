@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from matplotlib.scale import (
     AsinhScale, AsinhTransform,
     LogTransform, InvertedLogTransform,
-    SymmetricalLogTransform)
+    SymmetricalLogTransform, PowerTransform)
 import matplotlib.scale as mscale
 from matplotlib.ticker import (
     AsinhLocator, AutoLocator, LogFormatterSciNotation,
@@ -371,3 +371,39 @@ def test_custom_scale_with_axis():
         # cleanup - there's no public unregister_scale()
         del mscale._scale_mapping["custom"]
         del mscale._scale_has_axis_parameter["custom"]
+
+
+@image_comparison(["power_scale.png"], remove_text=True, style="mpl20")
+def test_power_scale():
+    xs = np.linspace(-5, 5, 100)
+    fig, (ax1, ax2) = plt.subplots(1, 2)
+    ax1.scatter(xs, xs, s=0.1)
+    ax1.set_yscale("power", gamma=2)
+    ax2.plot(xs, xs)
+    ax2.set_yscale("power", gamma=0.1)
+
+
+def test_power_transform():
+    for gamma in (-2, -1, -0.5, 0, 0.5, 1, 2):
+        p = PowerTransform(gamma)
+
+        x = np.array([-2, -1, 0, 1, 2, 3, np.nan])
+        expected_x_transformed = [-2, -1, 0, 1, 2**gamma, 3**gamma, np.nan]
+
+        x_transformed = p.transform_non_affine(x)
+        assert_allclose(x_transformed, expected_x_transformed)
+
+
+def test_inverse_power_transform():
+    for gamma in (-2, -1, -0.5, 0.5, 1, 2):
+        p = PowerTransform(gamma)
+        p_inv = p.inverted()
+
+        x = np.array([-2, -1, 0, 1, 2, 3, np.nan])
+        x_transformed = p.transform_non_affine(x)
+        x_transformed_inv = p_inv.transform_non_affine(x_transformed)
+
+        assert_allclose(x_transformed_inv, x)
+
+    with pytest.raises(ValueError):
+        p_inv = PowerTransform(0).inverted()
