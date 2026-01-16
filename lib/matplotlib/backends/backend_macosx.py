@@ -170,7 +170,7 @@ class FigureManagerMac(_macosx.FigureManager, FigureManagerBase):
             self.canvas.draw_idle()
 
     def context_menu(self, event, labels=None, actions=None):
-        if labels is None or actions is None:
+        if not labels or not actions:
             return
         menu = AppKit.NSMenu.alloc().init()
         self._menu_callbacks = []
