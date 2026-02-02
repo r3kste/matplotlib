@@ -527,7 +527,7 @@ class ToolbarGTK4(ToolContainerBase, Gtk.Box):
         self._groups[group].insert_child_after(
             button, self._find_child_at_position(group, position))
 
-    def _call_tool(self, widget, name):
+    def _call_tool(self, btn, name):
         self.trigger_tool(name)
 
     def toggle_toolitem(self, name, toggled):

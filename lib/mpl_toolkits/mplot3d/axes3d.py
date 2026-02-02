@@ -187,8 +187,6 @@ class Axes3D(Axes):
         pseudo_bbox = self.transLimits.inverted().transform([(0, 0), (1, 1)])
         self._pseudo_w, self._pseudo_h = pseudo_bbox[1] - pseudo_bbox[0]
 
-        self._mouse_moved = False
-
         # mplot3d currently manages its own spines and needs these turned off
         # for bounding box calculations
         self.spines[:].set_visible(False)
@@ -1359,7 +1357,6 @@ class Axes3D(Axes):
 
     def _button_press(self, event):
         if event.inaxes == self:
-            self._mouse_moved = False
             self.button_pressed = event.button
             self._sx, self._sy = event.xdata, event.ydata
             toolbar = self.get_figure(root=True).canvas.toolbar
