@@ -16,7 +16,6 @@ import math
 import textwrap
 import warnings
 
-import functools
 import numpy as np
 
 import matplotlib as mpl
@@ -1371,24 +1370,6 @@ class Axes3D(Axes):
 
     def _button_release(self, event):
         self.button_pressed = None
-
-        if event.button in self._zoom_btn and event.inaxes == self \
-            and not self._mouse_moved:
-            canvas = self.get_figure(root=True).canvas
-
-            def draw_lambda(elev, azim):
-                self.view_init(elev=elev, azim=azim)
-                canvas.draw_idle()
-
-            if hasattr(canvas.manager, "context_menu"):
-                canvas.manager.context_menu(
-                    event,
-                    labels=["Go to X-Y view", "Go to Y-Z view", "Go to X-Z view"],
-                    actions=[functools.partial(draw_lambda, elev=90, azim=-90),
-                            functools.partial(draw_lambda, elev=0, azim=0),
-                            functools.partial(draw_lambda, elev=0, azim=-90)],
-                )
-
         toolbar = self.get_figure(root=True).canvas.toolbar
         # backend_bases.release_zoom and backend_bases.release_pan call
         # push_current, so check the navigation mode so we don't call it twice
@@ -1579,9 +1560,6 @@ class Axes3D(Axes):
         dx, dy = x - self._sx, y - self._sy
         w = self._pseudo_w
         h = self._pseudo_h
-
-        if (dx**2 + dy**2) > 1e-6:
-            self._mouse_moved = True
 
         if self.get_navigate_mode() is not None:
             # we don't want to rotate if we are zooming/panning

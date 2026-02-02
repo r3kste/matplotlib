@@ -627,17 +627,6 @@ class FigureManagerQT(FigureManagerBase):
         else:
             self.window.showFullScreen()
 
-    def context_menu(self, event, labels=None, actions=None):
-        if not labels or not actions:
-            return
-        menu = QtWidgets.QMenu(self.window)
-        for label, action in zip(labels, actions):
-            menu.addAction(label).triggered.connect(action)
-        if hasattr(event.guiEvent, 'globalPosition'):
-            menu.exec(event.guiEvent.globalPosition().toPoint())
-        else:
-            menu.exec(event.guiEvent.globalPos())
-
     def _widgetclosed(self):
         CloseEvent("close_event", self.canvas)._process()
         if self.window._destroying:
@@ -978,6 +967,20 @@ class NavigationToolbar2QT(NavigationToolbar2, QtWidgets.QToolBar):
                     QtWidgets.QMessageBox.StandardButton.Ok,
                     QtWidgets.QMessageBox.StandardButton.NoButton)
         return fname
+
+    def view_snap(self, *args):
+        action = self._actions.get('view_snap')
+        btn = self.widgetForAction(action)
+        self._view_menu = QtWidgets.QMenu(self)
+        def draw_lambda(elev, azim):
+            ax = self.canvas.figure.gca()
+            ax.view_init(elev=elev, azim=azim)
+            self.canvas.draw()
+        self._view_menu.addAction("XY Plane", lambda: draw_lambda(90, -90))
+        self._view_menu.addAction("XZ Plane", lambda: draw_lambda(0, -90))
+        self._view_menu.addAction("YZ Plane", lambda: draw_lambda(0, 0))
+        point = btn.mapToGlobal(QtCore.QPoint(0, btn.height()))
+        self._view_menu.exec(point)
 
     def set_history_buttons(self):
         can_backward = self._nav_stack._pos > 0

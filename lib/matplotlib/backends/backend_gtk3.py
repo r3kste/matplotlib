@@ -400,6 +400,22 @@ class NavigationToolbar2GTK3(_NavigationToolbar2GTK, Gtk.Toolbar):
             dialog.run()
             dialog.destroy()
 
+    def view_snap(self, *args):
+        widget = args[0]
+        self._view_menu = Gtk.Menu()
+        def draw_lambda(elev, azim):
+            ax = self.canvas.figure.gca()
+            ax.view_init(elev=elev, azim=azim)
+            self.canvas.draw()
+        views = [("XY Plane", 90, -90), ("XZ Plane", 0, -90), ("YZ Plane", 0, 0)]
+        for name, el, az in views:
+            item = Gtk.MenuItem(label=name)
+            item.connect("activate", lambda x, e=el, a=az: draw_lambda(e, a))
+            self._view_menu.append(item)
+        self._view_menu.show_all()
+        self._view_menu.popup_at_widget(widget, Gdk.Gravity.NORTH,
+                                        Gdk.Gravity.SOUTH, None)
+
 
 class ToolbarGTK3(ToolContainerBase, Gtk.Box):
     _icon_extension = '-symbolic.svg'

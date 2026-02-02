@@ -2903,6 +2903,7 @@ class NavigationToolbar2:
         ('Home', 'Reset original view', 'home', 'home'),
         ('Back', 'Back to previous view', 'back', 'back'),
         ('Forward', 'Forward to next view', 'forward', 'forward'),
+        ('Views', 'Snapping to views', 'matplotlib', 'view_snap'),
         (None, None, None, None),
         ('Pan',
          'Left button pans, Right button zooms\n'
@@ -3365,6 +3366,9 @@ class NavigationToolbar2:
             the backend does not provide the information.
         """
         raise NotImplementedError
+
+    def view_snap(self):
+        pass
 
     def update(self):
         """Reset the Axes stack."""

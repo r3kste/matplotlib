@@ -646,14 +646,6 @@ class FigureManagerTk(FigureManagerBase):
         is_fullscreen = bool(self.window.attributes('-fullscreen'))
         self.window.attributes('-fullscreen', not is_fullscreen)
 
-    def context_menu(self, event, labels=None, actions=None):
-        if not labels or not actions:
-            return
-        menu = tk.Menu(self.window, tearoff=0)
-        for label, action in zip(labels, actions):
-            menu.add_command(label=label, command=action)
-        menu.tk_popup(event.guiEvent.x_root, event.guiEvent.y_root)
-
 
 class NavigationToolbar2Tk(NavigationToolbar2, tk.Frame):
     def __init__(self, canvas, window=None, *, pack_toolbar=True):
@@ -954,6 +946,23 @@ class NavigationToolbar2Tk(NavigationToolbar2, tk.Frame):
             return fname
         except Exception as e:
             tkinter.messagebox.showerror("Error saving file", str(e))
+
+    def view_snap(self, *args):
+        btn = self._buttons['Views']
+        self._view_menu = tk.Menu(self, tearoff=0)
+        def set_view(elev, azim):
+            ax = self.canvas.figure.gca()
+            if hasattr(ax, 'view_init'):
+                ax.view_init(elev=elev, azim=azim)
+                self.canvas.draw_idle()
+        self._view_menu.add_command(label="XY Plane", command=lambda: set_view(90, -90))
+        self._view_menu.add_command(label="XZ Plane", command=lambda: set_view(0, -90))
+        self._view_menu.add_command(label="YZ Plane", command=lambda: set_view(0, 0))
+        self._view_menu.update_idletasks()
+        x = btn.winfo_rootx()
+        y = btn.winfo_rooty() - self._view_menu.winfo_reqheight()
+        self._view_menu.tk_popup(x, y)
+        self._view_menu.grab_release()
 
     def set_history_buttons(self):
         state_map = {True: tk.NORMAL, False: tk.DISABLED}

@@ -435,6 +435,27 @@ class NavigationToolbar2GTK4(_NavigationToolbar2GTK, Gtk.Box):
         dialog.show()
         return self.UNKNOWN_SAVED_STATUS
 
+    def view_snap(self, *args):
+        widget = args[0]
+        self._view_menu = Gtk.Popover()
+        menu_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        self._view_menu.set_has_arrow(False)
+        self._view_menu.set_position(Gtk.PositionType.TOP)
+        self._view_menu.set_child(menu_box)
+        def draw_lambda(elev, azim):
+            ax = self.canvas.figure.gca()
+            ax.view_init(elev=elev, azim=azim)
+            self.canvas.draw()
+            self._view_menu.popdown()
+        views = [("XY Plane", 90, -90), ("XZ Plane", 0, -90), ("YZ Plane", 0, 0)]
+        for name, el, az in views:
+            item = Gtk.Button(label=name)
+            item.set_has_frame(False)
+            item.connect("clicked", lambda x, e=el, a=az: draw_lambda(e, a))
+            menu_box.append(item)
+        self._view_menu.set_parent(widget)
+        self._view_menu.popup()
+
 
 class ToolbarGTK4(ToolContainerBase, Gtk.Box):
     _icon_extension = '-symbolic.svg'
@@ -506,7 +527,7 @@ class ToolbarGTK4(ToolContainerBase, Gtk.Box):
         self._groups[group].insert_child_after(
             button, self._find_child_at_position(group, position))
 
-    def _call_tool(self, btn, name):
+    def _call_tool(self, widget, name):
         self.trigger_tool(name)
 
     def toggle_toolitem(self, name, toggled):
@@ -636,34 +657,6 @@ Toolbar = ToolbarGTK4
 class FigureManagerGTK4(_FigureManagerGTK):
     _toolbar2_class = NavigationToolbar2GTK4
     _toolmanager_toolbar_class = ToolbarGTK4
-
-    def context_menu(self, event, labels=None, actions=None):
-        if not labels or not actions:
-            return
-        menu = Gio.Menu()
-        action_group = Gio.SimpleActionGroup()
-        for label, action in zip(labels, actions):
-            action_name = label.replace(" ", "_")
-            g_action = Gio.SimpleAction.new(action_name, None)
-            g_action.connect("activate", lambda *_, a=action: a())
-            action_group.add_action(g_action)
-            menu.append(label, f"win.{action_name}")
-
-        self.canvas.insert_action_group("win", action_group)
-        popover = Gtk.PopoverMenu.new_from_model(menu)
-        popover.set_parent(self.canvas)
-        popover.set_has_arrow(False)
-        popover.set_halign(Gtk.Align.START)
-
-        scale = self.canvas.get_scale_factor()
-        height = self.canvas.get_height()
-        rect = Gdk.Rectangle()
-        rect.x = int(event.x / scale)
-        rect.y = int(height - (event.y / scale))
-        rect.width = 1
-        rect.height = 1
-        popover.set_pointing_to(rect)
-        popover.popup()
 
 
 @_BackendGTK.export
