@@ -968,6 +968,14 @@ class NavigationToolbar2QT(NavigationToolbar2, QtWidgets.QToolBar):
                     QtWidgets.QMessageBox.StandardButton.NoButton)
         return fname
 
+    def snap_view(self, *args):
+        action = self._actions.get('snap_view')
+        btn = self.widgetForAction(action)
+        menu = QtWidgets.QMenu()
+        for label, action in self.options:
+            menu.addAction(label, action)
+        menu.exec(btn.mapToGlobal(QtCore.QPoint(0, btn.height())))
+
     def set_history_buttons(self):
         can_backward = self._nav_stack._pos > 0
         can_forward = self._nav_stack._pos < len(self._nav_stack) - 1

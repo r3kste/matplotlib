@@ -2903,6 +2903,7 @@ class NavigationToolbar2:
         ('Home', 'Reset original view', 'home', 'home'),
         ('Back', 'Back to previous view', 'back', 'back'),
         ('Forward', 'Forward to next view', 'forward', 'forward'),
+        ('Views', 'Snap into planar views', 'matplotlib', 'snap_view'),
         (None, None, None, None),
         ('Pan',
          'Left button pans, Right button zooms\n'
@@ -2934,6 +2935,16 @@ class NavigationToolbar2:
 
         self.mode = _Mode.NONE  # a mode string for the status bar
         self.set_history_buttons()
+
+        def draw_lambda(elev, azim):
+            ax = self.canvas.figure.gca()
+            ax.view_init(elev=elev, azim=azim)
+            self.canvas.draw_idle()
+        self.options = [
+            ("Go to X-Y view", functools.partial(draw_lambda, elev=90, azim=-90)),
+            ("Go to Y-Z view", functools.partial(draw_lambda, elev=0, azim=0)),
+            ("Go to X-Z view", functools.partial(draw_lambda, elev=0, azim=-90))
+        ]
 
     def set_message(self, s):
         """Display a message on toolbar or in status bar."""
@@ -3364,6 +3375,9 @@ class NavigationToolbar2:
             Returns `NavigationToolbar2.UNKNOWN_SAVED_STATUS` when
             the backend does not provide the information.
         """
+        raise NotImplementedError
+
+    def snap_view(self, *args):
         raise NotImplementedError
 
     def update(self):
