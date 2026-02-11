@@ -283,6 +283,48 @@ class ThetaLocator(mticker.Locator):
         return np.deg2rad(self.base.view_limits(vmin, vmax))
 
 
+class ChoiceLocator(mticker.Locator):
+    def __init__(self, base=None, choices=None):
+        if choices is None:
+            choices = [
+                np.arange(-360, 360, 30.0),
+                np.arange(-360, 360, 45.0),
+                np.arange(-360, 360, 60.0),
+                np.arange(-360, 360, 90.0),
+            ]
+        if base is None:
+            base = mticker.AutoLocator()
+        self.choices = choices
+        self.base = base
+        self.axis = self.base.axis = _AxisWrapper(self.base.axis)
+
+    def set_axis(self, axis):
+        self.axis = _AxisWrapper(axis)
+        self.base.set_axis(self.axis)
+
+    def __call__(self):
+        lim = self.axis.get_view_interval()
+        vmin = min(lim[0], lim[1])
+        vmax = max(lim[0], lim[1])
+        max_ticks = self.axis.get_tick_space()
+        tol = 1e-12
+        if (vmax - vmin > 60):
+            for ticks in self.choices:
+                in_range = (ticks >= vmin - tol) & (ticks <= vmax + tol)
+                ticks = ticks[in_range]
+                if len(ticks) <= max_ticks:
+                    return np.deg2rad(ticks)
+        else:
+            return np.deg2rad(self.base())
+        ticks = self.choices[-1]
+        ticks = ticks[(ticks >= vmin - tol) & (ticks <= vmax + tol)]
+        return ticks
+
+    def view_limits(self, vmin, vmax):
+        vmin, vmax = np.rad2deg((vmin, vmax))
+        return np.deg2rad(self.base.view_limits(vmin, vmax))
+
+
 class ThetaTick(maxis.XTick):
     """
     A theta-axis tick.
@@ -387,7 +429,7 @@ class ThetaAxis(maxis.XAxis):
     _tick_class = ThetaTick
 
     def _wrap_locator_formatter(self):
-        self.set_major_locator(ThetaLocator(self.get_major_locator()))
+        self.set_major_locator(ChoiceLocator(self.get_major_locator()))
         self.set_major_formatter(ThetaFormatter())
         self.isDefault_majloc = True
         self.isDefault_majfmt = True
@@ -406,7 +448,6 @@ class ThetaAxis(maxis.XAxis):
         # LinearScale.set_default_locators_and_formatters just set the major
         # locator to be an AutoLocator, so we customize it here to have ticks
         # at sensible degree multiples.
-        self.get_major_locator().set_params(steps=[1, 1.5, 3, 4.5, 9, 10])
         self._wrap_locator_formatter()
 
     def _copy_tick_props(self, src, dest):
@@ -420,6 +461,23 @@ class ThetaAxis(maxis.XAxis):
         dest.label1.set_transform(trans + dest._text1_translate)
         trans = dest._get_text2_transform()[0]
         dest.label2.set_transform(trans + dest._text2_translate)
+
+    def get_tick_space(self):
+        ends = mtransforms.Bbox.unit().transformed(
+            self.axes.transAxes - self.get_figure(root=False).dpi_scale_trans)
+
+        thetamin, thetamax = self.axes._realViewLim.intervalx
+        radius = min(ends.height, ends.width) * 72
+        if abs(thetamax - thetamin) > np.pi / 2:
+            radius /=2
+        angle = abs(thetamax - thetamin)
+        arc_length = radius * angle
+        size = self._get_tick_label_size('x') * 3
+        if size > 0:
+            return int(np.floor(arc_length / size))
+        else:
+            return 2**31 - 1
+
 
 
 class RadialLocator(mticker.Locator):
@@ -689,6 +747,23 @@ class RadialAxis(maxis.YAxis):
         # docstring inherited
         super().clear()
         self.set_ticks_position('none')
+
+    def get_tick_space(self):
+        ends = mtransforms.Bbox.unit().transformed(
+            self.axes.transAxes - self.get_figure(root=False).dpi_scale_trans)
+        thetamin, thetamax = self.axes._realViewLim.intervalx
+        rmin, rmax = self.axes._realViewLim.intervaly
+        rorigin = self.axes.get_rorigin()
+        radius = min(ends.height, ends.width) * 72
+        actual_ratio = rmax / (rmax - rorigin)
+        if abs(thetamax - thetamin) > np.pi / 2:
+            radius /=2
+        # Having a spacing of at least 3 just looks good
+        size = self._get_tick_label_size('y') * 3
+        if size > 0:
+            return int(np.floor(radius * actual_ratio / size))
+        else:
+            return 2**31 - 1
 
 
 def _is_full_circle_deg(thetamin, thetamax):

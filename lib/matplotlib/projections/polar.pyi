@@ -53,6 +53,12 @@ class ThetaLocator(mticker.Locator):
     axis: _AxisWrapper | None
     def __init__(self, base: mticker.Locator) -> None: ...
 
+class ChoiceLocator(mticker.Locator):
+    choices: list[np.ndarray]
+    base: mticker.Locator | None
+    axis: _AxisWrapper | None
+    def __init__(self, base: mticker.Locator | None = ..., choices: list[np.ndarray] | None = ...) -> None: ...
+
 class ThetaTick(maxis.XTick):
     def __init__(self, axes: PolarAxes, *args, **kwargs) -> None: ...
 
