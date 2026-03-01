@@ -48,11 +48,6 @@ class _AxisWrapper:
     def set_data_interval(self, vmin: float, vmax: float) -> None: ...
     def get_tick_space(self) -> int: ...
 
-class ThetaLocator(mticker.Locator):
-    base: mticker.Locator
-    axis: _AxisWrapper | None
-    def __init__(self, base: mticker.Locator) -> None: ...
-
 class ChoiceLocator(mticker.Locator):
     choices: list[np.ndarray]
     base: mticker.Locator | None
@@ -90,7 +85,7 @@ class PolarAxes(Axes):
     InvertedPolarTransform: ClassVar[type] = InvertedPolarTransform
     ThetaFormatter: ClassVar[type] = ThetaFormatter
     RadialLocator: ClassVar[type] = RadialLocator
-    ThetaLocator: ClassVar[type] = ThetaLocator
+    ChoiceLocator: ClassVar[type] = ChoiceLocator
 
     name: str
     use_sticky_edges: bool

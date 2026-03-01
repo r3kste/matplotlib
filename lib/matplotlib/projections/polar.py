@@ -254,35 +254,6 @@ class _AxisWrapper:
         return self._axis.get_tick_space()
 
 
-class ThetaLocator(mticker.Locator):
-    """
-    Used to locate theta ticks.
-
-    This will work the same as the base locator except in the case that the
-    view spans the entire circle. In such cases, the previously used default
-    locations of every 45 degrees are returned.
-    """
-
-    def __init__(self, base):
-        self.base = base
-        self.axis = self.base.axis = _AxisWrapper(self.base.axis)
-
-    def set_axis(self, axis):
-        self.axis = _AxisWrapper(axis)
-        self.base.set_axis(self.axis)
-
-    def __call__(self):
-        lim = self.axis.get_view_interval()
-        if _is_full_circle_deg(lim[0], lim[1]):
-            return np.deg2rad(min(lim)) + np.arange(8) * 2 * np.pi / 8
-        else:
-            return np.deg2rad(self.base())
-
-    def view_limits(self, vmin, vmax):
-        vmin, vmax = np.rad2deg((vmin, vmax))
-        return np.deg2rad(self.base.view_limits(vmin, vmax))
-
-
 class ChoiceLocator(mticker.Locator):
     def __init__(self, base=None, choices=None):
         if choices is None:
@@ -306,14 +277,38 @@ class ChoiceLocator(mticker.Locator):
         lim = self.axis.get_view_interval()
         vmin = min(lim[0], lim[1])
         vmax = max(lim[0], lim[1])
-        max_ticks = self.axis.get_tick_space()
+        max_ticks = max(self.axis.get_tick_space() + 1, 2)
+        tick_interval = (vmax -vmin) / (max_ticks - 1)
         tol = 1e-12
+        if _is_full_circle_deg(lim[0], lim[1]):
+            return np.deg2rad(min(lim)) + np.arange(8) * 2 * np.pi / 8
         if (vmax - vmin > 60):
             for ticks in self.choices:
                 in_range = (ticks >= vmin - tol) & (ticks <= vmax + tol)
                 ticks = ticks[in_range]
-                if len(ticks) <= max_ticks:
+                if len(ticks) > max_ticks:
+                    continue
+                if len(ticks) == max_ticks:
+                    if vmin != ticks[0]:
+                        ticks[0] = vmin
+                    if vmax != ticks[-1]:
+                        ticks[-1] = vmax
                     return np.deg2rad(ticks)
+                if len(ticks) < max_ticks:
+                    if vmin != ticks[0]:
+                        if abs(ticks[0] - vmin) >= tick_interval:
+                            ticks = np.concatenate(([vmin], ticks))
+                        else:
+                            ticks[0] = vmin
+                    if vmax != ticks[-1]:
+                        if len(ticks) < max_ticks:
+                            if abs(vmax - ticks[-1]) >= tick_interval:
+                                ticks = np.concatenate((ticks, [vmax]))
+                            else:
+                                ticks[-1] = vmax
+                        else:
+                            ticks[-1] = vmax
+                return np.deg2rad(ticks)
         else:
             return np.deg2rad(self.base())
         ticks = self.choices[-1]
@@ -747,23 +742,6 @@ class RadialAxis(maxis.YAxis):
         # docstring inherited
         super().clear()
         self.set_ticks_position('none')
-
-    def get_tick_space(self):
-        ends = mtransforms.Bbox.unit().transformed(
-            self.axes.transAxes - self.get_figure(root=False).dpi_scale_trans)
-        thetamin, thetamax = self.axes._realViewLim.intervalx
-        rmin, rmax = self.axes._realViewLim.intervaly
-        rorigin = self.axes.get_rorigin()
-        radius = min(ends.height, ends.width) * 72
-        actual_ratio = rmax / (rmax - rorigin)
-        if abs(thetamax - thetamin) > np.pi / 2:
-            radius /=2
-        # Having a spacing of at least 3 just looks good
-        size = self._get_tick_label_size('y') * 3
-        if size > 0:
-            return int(np.floor(radius * actual_ratio / size))
-        else:
-            return 2**31 - 1
 
 
 def _is_full_circle_deg(thetamin, thetamax):
@@ -1585,4 +1563,4 @@ PolarAxes.PolarAffine = PolarAffine
 PolarAxes.InvertedPolarTransform = InvertedPolarTransform
 PolarAxes.ThetaFormatter = ThetaFormatter
 PolarAxes.RadialLocator = RadialLocator
-PolarAxes.ThetaLocator = ThetaLocator
+PolarAxes.ChoiceLocator = ChoiceLocator
